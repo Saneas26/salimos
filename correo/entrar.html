@@ -1,0 +1,17 @@
+{{ if eq .RedirectTo "https://salimos.saneas.es/" }}<div style="font-family:Arial,Helvetica,sans-serif;background:#f1f5f9;padding:32px 16px;color:#0f172a">
+  <div style="max-width:480px;margin:0 auto;background:#ffffff;border:1px solid #cbd5e1;border-radius:14px;padding:32px">
+    <p style="margin:0 0 8px;font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:#92400e">SALIMOS &middot; GRAN CANARIA</p>
+    <h1 style="margin:0 0 18px;font-size:30px;font-weight:700;letter-spacing:-1px;line-height:1.1;color:#0f172a">Tu c&oacute;digo para entrar</h1>
+    <p style="margin:0 0 20px;font-size:16px;line-height:1.55;color:#334155">Escribe estas seis cifras en Salimos:</p>
+    <p style="margin:0 0 26px;font-size:36px;font-weight:700;letter-spacing:10px;color:#0f172a;background:#fef3c7;border-radius:14px;padding:20px;text-align:center">{{ .Token }}</p>
+    <p style="margin:0;font-size:14px;line-height:1.55;color:#334155">El c&oacute;digo vale una sola vez y caduca en una hora. Si no has pedido entrar, no hagas nada: sin el c&oacute;digo nadie puede usar tu correo.</p>
+  </div>
+</div>{{ else }}<div style="font-family:Arial,Helvetica,sans-serif;background:#f7f9fa;padding:32px 16px;color:#17343c">
+  <div style="max-width:480px;margin:0 auto;background:#ffffff;border:1px solid #e8e8e8;border-radius:14px;padding:32px">
+    <p style="margin:0 0 8px;font-size:12px;letter-spacing:2.2px;text-transform:uppercase;font-weight:700;color:#9a4f15">TRIVIAL &middot; SANEAS</p>
+    <h1 style="margin:0 0 18px;font-size:30px;font-weight:500;letter-spacing:-1.2px;line-height:1.1;color:#17343c">Tu c&oacute;digo para entrar</h1>
+    <p style="margin:0 0 20px;font-size:16px;line-height:1.55;color:#33474e">Escribe estas seis cifras en la app:</p>
+    <p style="margin:0 0 26px;font-size:36px;font-weight:700;letter-spacing:10px;color:#1a5a6a;background:#eef6f8;border-radius:14px;padding:20px;text-align:center">{{ .Token }}</p>
+    <p style="margin:0;font-size:14px;line-height:1.55;color:#33474e">El c&oacute;digo vale una sola vez y caduca en una hora. Si no has pedido entrar, no hagas nada: sin el c&oacute;digo nadie puede usar tu correo.</p>
+  </div>
+</div>{{ end }}
