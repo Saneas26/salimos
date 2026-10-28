@@ -55,7 +55,7 @@
   /* Cifras de un local tal como las da el servidor (el voto propio ya va dentro). */
   function cifras(l) {
     var crit = {};
-    S.criteriosDe(l.tipo).forEach(function (c) {
+    S.criteriosDe(l.tipo, l.tipo2).forEach(function (c) {
       var b = l.crit[c.id] || { suma: 0, n: 0 };
       crit[c.id] = { media: b.n ? b.suma / b.n : null, n: b.n };
     });
@@ -87,13 +87,16 @@
     return '<span class="nota ' + cl + '" aria-label="Nota ' + num(c.nota) + ' sobre 10"><b>' + num(c.nota) + '</b><small>de 10</small></span>';
   }
 
+  function nombreTipos(l) { return esc(tipo(l.tipo).nombre + (l.tipo2 ? ' y ' + tipo(l.tipo2).nombre.toLowerCase() : '')); }
+  function precioHTML(l) { return l.precio ? ' · <span class="precio" aria-label="Precio ' + ['económico', 'medio', 'alto'][l.precio - 1] + '">' + '€€€'.slice(0, l.precio) + '</span>' : ''; }
+
   function tarjetaLocal(l, puesto) {
     var t = tipo(l.tipo), c = cifras(l);
     return '<a class="local" href="#/local/' + l.id + '">' +
       (puesto ? '<span class="puesto' + (puesto === 1 ? ' p1' : '') + '">' + puesto + '</span>'
               : '<span class="local-icono" style="background:' + t.color + '" aria-hidden="true">' + t.emoji + '</span>') +
       '<span><h3>' + esc(l.nombre) + '</h3>' +
-      '<div class="donde">' + esc(t.nombre) + ' · ' + esc(l.barrio ? l.barrio + ', ' : '') + esc(l.municipio) + '</div>' +
+      '<div class="donde">' + nombreTipos(l) + ' · ' + esc(l.barrio || l.municipio) + precioHTML(l) + '</div>' +
       (mayoria(c) ? '<div class="edad">👥 Mayoría de ' + mayoria(c).nombre.replace('De ', '') + ' años</div>' : '') +
       '<div class="votos">' + c.votos + (c.votos === 1 ? ' voto' : ' votos') + (c.mio ? ' · incluye el tuyo' : '') + '</div></span>' +
       notaHTML(c) + '</a>';
@@ -172,7 +175,7 @@
   function filtrados() {
     var q = sinTildes(filtro.texto.trim());
     return LOCALES.filter(function (l) {
-      if (filtro.tipo && l.tipo !== filtro.tipo) return false;
+      if (filtro.tipo && l.tipo !== filtro.tipo && l.tipo2 !== filtro.tipo) return false;
       if (filtro.zona && l.zona !== filtro.zona) return false;
       if (filtro.edades.length && !encajaEdad(mayoria(cifras(l)), filtro.edades)) return false;
       if (q && sinTildes(l.nombre + ' ' + l.municipio + ' ' + (l.barrio || '') + ' ' + tipo(l.tipo).nombre).indexOf(q) < 0) return false;
@@ -188,8 +191,9 @@
       return;
     }
     document.getElementById('resultados').innerHTML = top.length ? top.map(function (l) { return tarjetaLocal(l); }).join('')
+      : base.length ? '<p class="vacio">Todavía ningún sitio llega a ' + S.MIN_VOTOS_RANKING + ' votos. Más abajo están los recién llegados: si has ido, vota.</p>'
       : '<p class="vacio">No hay ningún sitio con estos filtros todavía.<br><a href="#/recomendar">¿Conoces uno? Recomiéndalo</a></p>';
-    var aplica = base.filter(function (l) { return S.criteriosDe(l.tipo).some(function (c) { return c.id === filtro.criterio; }); });
+    var aplica = base.filter(function (l) { return S.criteriosDe(l.tipo, l.tipo2).some(function (c) { return c.id === filtro.criterio; }); });
     var pod = ordenarPorNota(aplica, filtro.criterio).slice(0, 3);
     document.getElementById('podio').innerHTML = pod.length ? pod.map(function (l, i) { return tarjetaLocal(l, i + 1); }).join('')
       : '<p class="vacio">Aún no hay votos suficientes en esto.</p>';
@@ -212,7 +216,7 @@
   P.local = function (id) {
     var l = local(id); if (!l) return P.noExiste();
     var t = tipo(l.tipo), c = cifras(l);
-    var criterios = S.criteriosDe(l.tipo).map(function (cr) {
+    var criterios = S.criteriosDe(l.tipo, l.tipo2).map(function (cr) {
       var d = c.crit[cr.id];
       return '<div class="criterio"><span class="em" aria-hidden="true">' + cr.emoji + '</span><span class="nom">' + esc(cr.nombre) + '</span>' +
         (d.media == null ? '<span class="val sin">sin votos</span><span class="barra"><i style="width:0"></i></span>'
@@ -228,17 +232,27 @@
         r.opciones.map(function (o) { return '<i style="width:' + ((d[o[0]] || 0) / tot * 100) + '%;background:' + COLORES[o[0]] + '"></i>'; }).join('') + '</div>' +
         '<div class="leyenda">' + r.opciones.map(function (o) { return '<span style="--c:' + COLORES[o[0]] + '">' + o[1] + ' ' + Math.round((d[o[0]] || 0) / tot * 100) + ' %</span>'; }).join('') + '</div></div>';
     }).join('');
-    var mapa = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(l.nombre + ', ' + (l.barrio ? l.barrio + ', ' : '') + l.municipio + ', Gran Canaria');
+    var mapa = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(l.nombre + ', ' + (l.direccion || l.barrio || '') + ', ' + l.municipio + ', Gran Canaria');
+    var datos = [
+      l.direccion ? '<li><span aria-hidden="true">📍</span><span>' + esc(l.direccion) + '</span></li>' : '',
+      l.telefono ? '<li><span aria-hidden="true">📞</span><a href="tel:+34' + l.telefono.replace(/\D/g, '') + '">' + esc(l.telefono) + '</a></li>' : '',
+      l.web ? '<li><span aria-hidden="true">🌐</span><a href="' + esc(l.web) + '" target="_blank" rel="noopener">' + esc(l.web.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')) + '</a></li>' : '',
+      l.precios ? '<li><span aria-hidden="true">💶</span><span>' + esc(l.precios) + '</span></li>' : '',
+      l.consejo ? '<li><span aria-hidden="true">💡</span><span>' + esc(l.consejo) + '</span></li>' : ''
+    ].join('');
+    var etiquetas = (l.etiquetas || []).map(function (e) { return '<span class="etiqueta">' + esc(e) + '</span>'; }).join('');
 
     vista.innerHTML =
       '<a class="volver" href="#/explorar">← Volver</a>' +
       '<div class="ficha-cab"><div><h1>' + esc(l.nombre) + '</h1>' +
-      '<div class="donde">' + t.emoji + ' ' + esc(t.nombre) + ' · ' + esc(l.barrio ? l.barrio + ', ' : '') + esc(l.municipio) + '</div>' +
+      '<div class="donde">' + t.emoji + ' ' + nombreTipos(l) + ' · ' + esc(l.barrio ? l.barrio + ', ' : '') + esc(l.municipio) + precioHTML(l) + '</div>' +
       (mayoria(c) ? '<div class="donde">👥 La mayoría de la gente, ' + mayoria(c).nombre.toLowerCase() + ' años</div>' : '') +
-      '<span class="sello">✓ ' + c.votos + (c.votos === 1 ? ' voto' : ' votos') + ' de personas con cuenta</span></div>' + notaHTML(c) + '</div>' +
+      (c.votos ? '<span class="sello">✓ ' + c.votos + (c.votos === 1 ? ' voto' : ' votos') + ' de personas con cuenta</span>' : '<span class="sello" style="background:var(--ambar-fondo);color:var(--ambar-oscuro)">Todavía sin votos: sé el primero</span>') + '</div>' + notaHTML(c) + '</div>' +
       (c.votos < S.MIN_VOTOS_RANKING ? '<p class="tarjeta" style="margin-top:16px;font-weight:700">Este sitio tiene todavía muy pocos votos: no entra en los rankings hasta llegar a ' + S.MIN_VOTOS_RANKING + '.</p>' : '') +
       '<div class="acciones-ficha"><a class="boton boton-ambar" href="#/votar/' + l.id + '">' + (c.mio ? 'Cambiar mi voto' : 'Votar este sitio') + '</a>' +
       '<a class="boton boton-borde" href="' + mapa + '" target="_blank" rel="noopener">Cómo llegar</a></div>' +
+      (etiquetas ? '<div class="etiquetas">' + etiquetas + '</div>' : '') +
+      (datos ? '<ul class="datos tarjeta">' + datos + '</ul>' : '') +
       '<section class="bloque"><h2>Nota por partes</h2><p class="sub">La media de lo que ha votado la gente, de 0 a 10.</p><div class="tarjeta">' + criterios + '</div></section>' +
       (rapidas ? '<section class="bloque"><h2>En una palabra</h2><div class="tarjeta">' + rapidas + '</div></section>' : '') +
       comentariosHTML(l);
@@ -270,7 +284,7 @@
     if (!usuario() || !YO.perfil) { guardar('vuelta', '#/votar/' + id); location.hash = '#/entrar'; return; }
     var previo = votosDe()[id] || { crit: {}, rapidas: {} };
     var voto = { crit: Object.assign({}, previo.crit), rapidas: Object.assign({}, previo.rapidas), comentario: previo.comentario };
-    var crits = S.criteriosDe(l.tipo);
+    var crits = S.criteriosDe(l.tipo, l.tipo2);
     var PALABRA = ['Fatal', 'Fatal', 'Muy mal', 'Mal', 'Flojo', 'Regular', 'Aprobado', 'Bien', 'Muy bien', 'Excelente', 'Perfecto'];
 
     vista.innerHTML =

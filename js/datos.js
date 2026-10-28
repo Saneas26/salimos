@@ -64,8 +64,10 @@
     return null;
   }
 
-  function criteriosDe(tipo) {
-    return BASE.concat(EXTRAS.filter(function (e) { return e.tipos.indexOf(tipo) >= 0; }));
+  // Un local puede tener dos tipos (p. ej. restaurante con terraza de copas): suma los extras de los dos.
+  // Tiene que coincidir con salimos.criterios_de(tipo, tipo2) en sql/02-ficha-y-primeros-locales.sql.
+  function criteriosDe(tipo, tipo2) {
+    return BASE.concat(EXTRAS.filter(function (e) { return e.tipos.indexOf(tipo) >= 0 || (tipo2 && e.tipos.indexOf(tipo2) >= 0); }));
   }
 
   window.SALIMOS = {
