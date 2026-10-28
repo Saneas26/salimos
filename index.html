@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Salimos · Dónde salir en Gran Canaria</title>
+<meta name="description" content="Dónde comer, tomar algo, bailar o ligar en Gran Canaria, según la gente que sale. Gratis, sin anuncios y sin patrocinios.">
+<meta name="theme-color" content="#0F172A">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="img/icono.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/salimos.css?v=3">
+</head>
+<body>
+
+<header class="cabecera">
+  <a class="marca" href="#/explorar" aria-label="Salimos, volver al inicio">
+    <span class="marca-nombre">Salimos<span class="marca-punto">?</span></span>
+    <span class="marca-isla">Gran Canaria</span>
+  </a>
+  <button type="button" class="gs-boton" onclick="GrupoSaneas.abrirMenu()" aria-label="Ver las apps del Grupo Saneas">
+    <span class="gs-b-marca">Grupo <b>Saneas</b> &#9656;</span>
+    <span class="gs-b-accion">despliega</span>
+  </button>
+</header>
+
+<main id="vista" tabindex="-1"></main>
+
+<footer class="pie" id="pie">
+  <p class="pie-promesa">Aquí nadie paga: ni locales, ni marcas, ni anuncios. Solo cuenta lo que vota la gente.</p>
+  <p class="rot">EL GRUPO SANEAS</p>
+  <div class="grupo-pie"></div>
+  <p class="pie-enlaces"><a href="privacidad.html">Privacidad</a> · <a href="#/como-funciona">Cómo funciona</a></p>
+</footer>
+
+<nav class="pestanas" aria-label="Secciones">
+  <a href="#/explorar" data-tab="explorar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Explorar</span></a>
+  <a href="#/zonas" data-tab="zonas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Zonas</span></a>
+  <a href="#/recomendar" data-tab="recomendar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Recomendar</span></a>
+  <a href="#/tu" data-tab="tu"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>Tú</span></a>
+</nav>
+
+<div class="tostada" id="tostada" role="status" aria-live="polite"></div>
+
+<script src="js/grupo-saneas.js"></script>
+<script>
+  /* Grupo Saneas: el mismo componente en todas las casas del grupo. */
+  GrupoSaneas.init({
+    actual: 'salimos',
+    logos: 'img/',
+    barra: '.cabecera',
+    extras: [{
+      id: 'academia', nombre: 'Academia Saneas', url: 'https://saneas.es/academia',
+      logo: 'app-asesorias.png', tipo: 'un programa',
+      texto: 'Si te gusta el mundo de la nutrición, ahora tú también puedes. Más fácil que nunca.'
+    }]
+  });
+  document.querySelectorAll('.grupo-pie').forEach(function (p) { p.innerHTML = GrupoSaneas.gridHTML(); });
+  /* Contador del grupo: solo fuera de este Mac, para no contar las pruebas. */
+  if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+    var t = document.createElement('script'); t.src = 'js/telemetria.js'; document.body.appendChild(t);
+  }
+</script>
+<script src="vendor/supabase.js"></script>
+<script src="js/datos.js?v=3"></script>
+<script src="js/app.js?v=6"></script>
+</body>
+</html>
