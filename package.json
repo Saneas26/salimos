@@ -1,0 +1,19 @@
+{
+  "name": "salimos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Salimos · dónde salir en Gran Canaria según la gente que sale, empaquetada como app Android e iOS con Capacitor",
+  "scripts": {
+    "build:www": "bash scripts/build-www.sh",
+    "iconos": "python3 scripts/iconos.py",
+    "cap:sync": "npm run build:www && npx cap sync"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/ios": "^8.5.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.0"
+  }
+}

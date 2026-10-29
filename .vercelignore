@@ -3,3 +3,14 @@ sql/
 .github/
 .impeccable/
 README.md
+android/
+ios/
+scripts/
+tienda/
+node_modules/
+package.json
+package-lock.json
+capacitor.config.json
+www/
+img/icono-fuente-1024.png
+img/icono-simbolo-1024.png

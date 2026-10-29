@@ -1,0 +1,88 @@
+apply plugin: 'com.android.application'
+
+// El número de versión de la compilación. Google Play rechaza dos subidas con el mismo,
+// así que en la nube llega el nº de ejecución del workflow y en local vale 1.
+// Ojo con Groovy: `versionCode (X).toInteger()` NO es lo que parece (ver Trivial): la
+// cuenta se hace aquí, en una variable, y abajo solo se usa.
+def codigoVersion = (System.getenv("ANDROID_VERSION_CODE") ?: "1").toInteger()
+
+android {
+    namespace = "es.saneas.salimos"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "es.saneas.salimos"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode codigoVersion
+        versionName "1.0.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}
+
+// ---- Firma con la CLAVE DE SUBIDA del grupo (Play App Signing) ----
+// Las credenciales llegan por variables de entorno (GitHub Actions las saca de los Secrets).
+// Si faltan, el .aab sale SIN FIRMAR: sirve para comprobar que el pipeline va, no para subirlo.
+def ksPath  = System.getenv("ANDROID_KEYSTORE_PATH")
+def ksPass  = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+def ksAlias = System.getenv("ANDROID_KEY_ALIAS")
+def ksKeyPw = System.getenv("ANDROID_KEY_PASSWORD")
+def firmaLista = ksPath && ksPass && ksAlias && ksKeyPw && file(ksPath).exists()
+if (firmaLista) {
+    println ">>> Salimos: firmando el release con la clave de subida (alias '${ksAlias}')"
+} else {
+    println ">>> Salimos: SIN credenciales de firma -> el .aab/.apk release saldran SIN FIRMAR"
+}
+
+android {
+    if (firmaLista) {
+        signingConfigs {
+            release {
+                storeFile file(ksPath)
+                storePassword ksPass
+                keyAlias ksAlias
+                keyPassword ksKeyPw
+            }
+        }
+        buildTypes.release.signingConfig signingConfigs.release
+    }
+}

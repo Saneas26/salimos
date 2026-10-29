@@ -484,14 +484,37 @@
     var r = await sb.rpc('salimos_comentarios', { p_local: l.id });
     if (!document.body.contains(caja)) return;
     caja.removeAttribute('aria-busy');
-    var lista = r.error ? [] : r.data;
+    /* Lo que este móvil ha denunciado o bloqueado no se vuelve a ver aquí. */
+    var bloqueados = leer('bloqueados', []), denunciados = leer('denunciados', []);
+    var lista = (r.error ? [] : r.data).filter(function (k) { return bloqueados.indexOf(k.autor) < 0 && denunciados.indexOf(l.id + ':' + k.autor) < 0; });
+    if (r.error) { caja.querySelector('.lista').innerHTML = '<p class="font-body-sm text-body-sm text-on-surface-variant">No se han podido cargar.</p>'; return; }
     caja.querySelector('.lista').innerHTML = lista.length ? lista.map(function (k) {
+      var acciones = k.mio ? '' : '<div class="flex items-center gap-2 mt-3">' +
+        '<button type="button" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-highest text-on-surface-variant font-label-badge text-label-badge active:scale-95 transition-all" data-denunciar="' + esc(k.autor) + '">' + ic('flag', 'text-[14px]') + 'Denunciar</button>' +
+        '<button type="button" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-highest text-on-surface-variant font-label-badge text-label-badge active:scale-95 transition-all" data-bloquear="' + esc(k.autor) + '">' + ic('block', 'text-[14px]') + 'Bloquear a esta persona</button></div>';
       return '<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm"><div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2">' +
         '<div class="w-9 h-9 rounded-full ' + (k.mio ? 'bg-primary-fixed text-on-primary-fixed' : 'bg-secondary-fixed text-on-secondary-fixed') + ' flex items-center justify-center">' + ic('person', 'text-[20px]', true) + '</div>' +
         '<div><div class="flex items-center gap-1.5"><span class="font-label-prominent text-label-prominent text-on-surface">' + (k.mio ? 'Tu comentario' : 'Persona con cuenta') + '</span>' + ic('check_circle', 'text-[15px] text-tertiary', true) + '</div>' +
         '<span class="font-label-micro text-label-micro text-on-surface-variant">Gran Canaria • ' + haceCuanto(k.fecha) + '</span></div></div></div>' +
-        '<p class="font-body-sm text-body-sm text-on-surface">"' + esc(k.texto) + '"</p></div>';
-    }).join('') : '<p class="font-body-sm text-body-sm text-on-surface-variant">No se han podido cargar.</p>';
+        '<p class="font-body-sm text-body-sm text-on-surface">"' + esc(k.texto) + '"</p>' + acciones + '</div>';
+    }).join('') : '<p class="font-body-sm text-body-sm text-on-surface-variant">No hay comentarios que mostrar.</p>';
+    caja.querySelectorAll('[data-denunciar]').forEach(function (b) {
+      b.onclick = async function () {
+        if (!confirm('¿Denunciar este comentario? Lo revisamos en menos de 24 horas y, si no respeta las normas, lo quitamos.')) return;
+        b.disabled = true;
+        var d = await sb.rpc('salimos_denunciar', { p_local: l.id, p_autor: b.dataset.denunciar, p_motivo: null });
+        if (d.error) { b.disabled = false; tostada(textoError(d.error)); return; }
+        var ds = leer('denunciados', []); ds.push(l.id + ':' + b.dataset.denunciar); guardar('denunciados', ds);
+        tostada('Gracias. Lo revisamos en menos de 24 horas.'); pintarComentarios(l);
+      };
+    });
+    caja.querySelectorAll('[data-bloquear]').forEach(function (b) {
+      b.onclick = function () {
+        if (!confirm('¿Dejar de ver los comentarios de esta persona en todos los sitios? Se guarda en este móvil.')) return;
+        var bs = leer('bloqueados', []); bs.push(b.dataset.bloquear); guardar('bloqueados', bs);
+        tostada('Bloqueada. Ya no verás sus comentarios.'); pintarComentarios(l);
+      };
+    });
   }
 
   /* Votar sin sitio elegido: la lista para escoger. */
@@ -767,8 +790,10 @@
       '<div><h4 class="font-label-prominent text-label-prominent text-on-surface">Tus votos</h4><span class="font-label-micro text-label-micro text-on-surface-variant">Toca un sitio para cambiar tu voto</span></div></div>' +
       '<div class="flex flex-col gap-space-xs">' + (ids.length ? ids.map(function (id) { return filaSitio(local(id)).replace('#/local/', '#/votar/'); }).join('') : '<p class="p-2.5 rounded-DEFAULT bg-surface-container-low font-body-sm text-body-sm text-on-surface-variant">Todavía no has votado ningún sitio.</p>') + '</div></div>' +
       bloqueGuardados +
+      (leer('bloqueados', []).length ? '<button type="button" class="font-label-prominent text-label-prominent text-secondary underline self-center" id="desbloquear">Volver a ver a las personas bloqueadas (' + leer('bloqueados', []).length + ')</button>' : '') +
       '<button type="button" class="w-full h-12 rounded-full bg-surface-container-high text-on-surface font-label-prominent text-label-prominent flex items-center justify-center gap-2 active:scale-95 transition-all" id="salir">' + ic('logout', 'text-[20px] text-secondary') + 'Cerrar sesión</button>' +
       '<button type="button" class="font-label-prominent text-label-prominent text-error underline self-center" id="borrarCuenta">Borrar mi cuenta y mis votos</button>');
+    if (document.getElementById('desbloquear')) document.getElementById('desbloquear').onclick = function () { borrar('bloqueados'); tostada('Desbloqueadas.'); P.tu(); };
     document.getElementById('salir').onclick = async function () { await sb.auth.signOut(); await cargarYo(); tostada('Sesión cerrada.'); P.tu(); };
     document.getElementById('borrarCuenta').onclick = async function () {
       if (!confirm('¿Borrar tu cuenta y todos tus votos y comentarios? No se puede deshacer.')) return;
@@ -787,7 +812,7 @@
       ['checklist_rtl', 'bg-primary-fixed text-on-primary-fixed', 'Cómo sale la nota', 'Cada sitio se vota por partes: limpieza, ambiente, servicio, consumiciones, precio, ubicación, parking y guagua, y además lo propio de cada tipo de sitio (la carta, los vinos, la música o las vistas). La nota general es la media de esas partes. Un sitio no entra en los rankings hasta tener ' + S.MIN_VOTOS_RANKING + ' votos.'],
       ['money_off', 'bg-error-container text-on-error-container', 'Quién paga', 'Nadie. Ningún local, marca ni anunciante puede pagar por salir, subir o quitar una nota. Salimos es del Grupo Saneas y es gratis.'],
       ['fingerprint', 'bg-secondary-fixed text-on-secondary-fixed', 'Votos falsos', 'Una cuenta solo puede votar una vez cada sitio, y hay un tope de sitios nuevos al día. Vigilamos los votos raros —muchas cuentas nuevas votando el mismo sitio de golpe— y los que sean de mentira no cuentan.'],
-      ['forum', 'bg-surface-container-highest text-on-surface', 'Comentarios', 'Se publican al momento. Quitamos los que insultan, señalan a trabajadores con nombre o no tienen que ver con el sitio.']
+      ['forum', 'bg-surface-container-highest text-on-surface', 'Comentarios', 'Se publican al momento. Quitamos los que insultan, señalan a trabajadores con nombre o no tienen que ver con el sitio. Cualquiera puede denunciar un comentario y lo revisamos en menos de 24 horas; con tres denuncias se retira solo hasta que lo miremos. Y si alguien te molesta, puedes bloquearlo y no volverás a ver lo que escribe.']
     ];
     vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile pt-space-md pb-8 gap-space-md animate-screen-enter">' + cabeceraSeccion('Sin letra pequeña', 'Cómo funciona', '') +
       p.map(function (x) {

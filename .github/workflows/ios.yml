@@ -1,0 +1,390 @@
+# Salimos · compila la app iOS (Capacitor) en un runner macOS de GitHub (el Mac de Óscar no tiene Xcode).
+# - SIEMPRE: archive SIN FIRMAR (CODE_SIGNING_ALLOWED=NO) → valida que el proyecto compila y deja
+#   el App.app (zip) como artefacto `salimos-ios-unsigned`. No se puede instalar en un iPhone.
+# - SOLO si existen los secretos de Apple (APPLE_CERTIFICATE_P12_BASE64, APPLE_CERTIFICATE_PASSWORD,
+#   APPLE_TEAM_ID + opcional APPLE_PROVISIONING_PROFILE_BASE64): archive FIRMADO + .ipa (App Store).
+# - SOLO si además existen APP_STORE_CONNECT_API_KEY_ID / _ISSUER_ID / _API_KEY_P8_BASE64: sube el .ipa
+#   a App Store Connect (TestFlight). Si faltan secretos → ::warning y se salta el bloque.
+# Documentación: APPS.md en la raíz del repo. Capacitor 8 usa Swift Package Manager (NO CocoaPods).
+name: iOS (Capacitor)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'ios/**'
+      - 'js/**'
+      - 'img/**'
+      - 'vendor/**'
+      - 'index.html'
+      - 'privacidad.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'capacitor.config.json'
+      - 'scripts/build-www.sh'
+      - '.github/workflows/**'
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Compilar iOS (archive)
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_API_KEY_P8_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8_BASE64 }}
+      PROYECTO: ios/App/App.xcodeproj
+      ESQUEMA: App
+      # Número de build = nº de ejecución del workflow: App Store Connect rechaza (en el procesado,
+      # sin avisar en el log) cualquier .ipa con la misma versión+build que otro ya subido. Con
+      # CURRENT_PROJECT_VERSION fijo a 1 en el pbxproj, solo el PRIMER build llegaba a TestFlight.
+      BUILD_NUM: ${{ github.run_number }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: npm ci
+        run: npm ci --no-audit --no-fund
+
+      - name: Construir www/
+        run: |
+          set -euo pipefail
+          npm run build:www
+          test -f www/index.html
+
+      - name: Capacitor sync ios
+        run: |
+          set -euo pipefail
+          npx cap sync ios
+          test -f ios/App/App/public/index.html
+          test -f ios/App/App/capacitor.config.json
+
+      - name: Xcode
+        run: |
+          set -euo pipefail
+          # Apple exige el SDK de iOS 26 (Xcode 26+) para subir a App Store Connect (validación 409 del
+          # 07/09/2026): se elige el Xcode MÁS NUEVO instalado en el runner, no el que trae por defecto.
+          ls -d /Applications/Xcode*.app | sort -V
+          NUEVO=$(ls -d /Applications/Xcode*.app | sort -V | tail -n 1)
+          sudo xcode-select -s "$NUEVO"
+          xcodebuild -version
+          xcode-select -p
+          xcodebuild -showsdks | grep -i iphoneos || true
+          # OJO: nada de `| head` tras xcodebuild/codesign con pipefail: head cierra la tubería y el
+          # proceso muere por SIGPIPE («Broken pipe», run #76 del 08/09/2026). awk/cut leen todo.
+          MAJOR=$(xcodebuild -version 2>/dev/null | awk 'NR==1{print $2}' | cut -d. -f1)
+          if [ "$MAJOR" -lt 26 ]; then echo "::error title=Xcode::el runner no tiene Xcode 26+ (tiene $MAJOR): cambia runs-on a macos-26"; exit 1; fi
+          xcodebuild -list -project "$PROYECTO"
+
+      - name: Resolver paquetes Swift (SPM)
+        run: |
+          set -euo pipefail
+          xcodebuild -resolvePackageDependencies \
+            -project "$PROYECTO" -scheme "$ESQUEMA" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
+            -skipPackagePluginValidation -skipMacroValidation
+
+      - name: Archive SIN FIRMAR (valida que compila)
+        id: archive
+        run: |
+          set -euo pipefail
+          LOG="$RUNNER_TEMP/xcodebuild-unsigned.log"
+          if ! xcodebuild \
+              -project "$PROYECTO" -scheme "$ESQUEMA" -configuration Release \
+              -sdk iphoneos -destination 'generic/platform=iOS' \
+              -archivePath "$RUNNER_TEMP/App.xcarchive" archive \
+              -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
+              -skipPackagePluginValidation -skipMacroValidation \
+              CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+              DEVELOPMENT_TEAM="" "CURRENT_PROJECT_VERSION=$BUILD_NUM" > "$LOG" 2>&1; then
+            echo "::error title=xcodebuild::el archive sin firmar ha fallado; errores:"
+            grep -nE "error:|fatal error|\*\* ARCHIVE FAILED" "$LOG" | head -n 60 || true
+            echo "----- últimas 120 líneas -----"
+            tail -n 120 "$LOG"
+            exit 1
+          fi
+          grep -E "ARCHIVE SUCCEEDED|BUILD SUCCEEDED" "$LOG" || { echo "ERROR: no consta ARCHIVE SUCCEEDED"; tail -n 60 "$LOG"; exit 1; }
+          echo "warnings del compilador: $(grep -c 'warning:' "$LOG" || true)"
+
+      - name: Verificar App.app (bundle id, versión, plist, contenido web) + zip + SHA256
+        id: verificar
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app"
+          test -d "$APP" || { echo "ERROR: no existe $APP"; ls -R "$RUNNER_TEMP/App.xcarchive" | head -n 40; exit 1; }
+          PL="$APP/Info.plist"
+          PB=/usr/libexec/PlistBuddy
+          BID=$("$PB" -c 'Print :CFBundleIdentifier' "$PL")
+          VER=$("$PB" -c 'Print :CFBundleShortVersionString' "$PL")
+          BUILD=$("$PB" -c 'Print :CFBundleVersion' "$PL")
+          NOMBRE=$("$PB" -c 'Print :CFBundleDisplayName' "$PL")
+          MINOS=$("$PB" -c 'Print :MinimumOSVersion' "$PL")
+          ENC=$("$PB" -c 'Print :ITSAppUsesNonExemptEncryption' "$PL")
+          ORI=$("$PB" -c 'Print :UISupportedInterfaceOrientations' "$PL" | tr -d '\n' | tr -s ' ')
+          echo "CFBundleIdentifier=$BID"; echo "Version=$VER ($BUILD)"; echo "DisplayName=$NOMBRE"; echo "MinimumOSVersion=$MINOS"
+          [ "$BUILD" = "$BUILD_NUM" ] || { echo "ERROR: CFBundleVersion=$BUILD y debería ser $BUILD_NUM (nº de ejecución)"; exit 1; }
+          echo "ITSAppUsesNonExemptEncryption=$ENC"; echo "Orientations=$ORI"
+          [ "$BID" = "es.saneas.salimos" ] || { echo "ERROR: CFBundleIdentifier != es.saneas.salimos"; exit 1; }
+          [ "$NOMBRE" = "Salimos" ] || { echo "ERROR: CFBundleDisplayName != Salimos"; exit 1; }
+          [ "$ENC" = "false" ] || { echo "ERROR: ITSAppUsesNonExemptEncryption debe ser false"; exit 1; }
+          echo "$ORI" | grep -q "UIInterfaceOrientationPortrait" || { echo "ERROR: falta la orientación Portrait"; exit 1; }
+          echo "$ORI" | grep -q "Landscape" && { echo "ERROR: la app no debe permitir Landscape en iPhone"; exit 1; }
+          # Salimos no pide NI UN permiso: ni cámara, ni fotos, ni ubicación, ni avisos.
+          # Si algún día aparece una clave de permiso en el Info.plist, el build para.
+          if plutil -p "$PL" | grep -E 'NS[A-Za-z]*UsageDescription'; then
+            echo "ERROR: el Info.plist pide permisos y esta app no necesita ninguno"; exit 1
+          fi
+          # La web de Salimos va dentro del binario.
+          test -f "$APP/public/index.html" || { echo "ERROR: falta App.app/public/index.html"; exit 1; }
+          test -f "$APP/capacitor.config.json" || { echo "ERROR: falta capacitor.config.json en el bundle"; exit 1; }
+          grep -q '"appId": *"es.saneas.salimos"' "$APP/capacitor.config.json" || { echo "ERROR: capacitor.config.json del bundle no es es.saneas.salimos"; exit 1; }
+          # Binario: arquitectura
+          lipo -info "$APP/App" || true
+          # Firma (no debe haberla en este paso)
+          codesign -dv "$APP" 2>&1 | head -n 5 || true
+
+          mkdir -p salida
+          ditto -c -k --keepParent "$APP" salida/salimos-ios-unsigned.zip
+          ditto -c -k --keepParent "$RUNNER_TEMP/App.xcarchive" salida/App.xcarchive.zip
+          shasum -a 256 salida/salimos-ios-unsigned.zip salida/App.xcarchive.zip | tee salida/SHA256SUMS.txt
+          APP_SHA=$(shasum -a 256 salida/salimos-ios-unsigned.zip | cut -d' ' -f1)
+          {
+            echo "BUNDLE_ID=$BID"
+            echo "VERSION=$VER ($BUILD)"
+            echo "DISPLAY_NAME=$NOMBRE"
+            echo "MIN_IOS=$MINOS"
+            echo "FIRMA=SIN FIRMAR (archive de validación)"
+            echo "COMMIT=${GITHUB_SHA}"
+            echo "SHA256_ZIP=$APP_SHA"
+          } > salida/INFO.txt
+          cp "$RUNNER_TEMP/xcodebuild-unsigned.log" salida/xcodebuild-unsigned.log
+          echo "app_sha256=$APP_SHA" >> "$GITHUB_OUTPUT"
+          echo "version=$VER ($BUILD)" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Salimos iOS · archive sin firmar"
+            echo "- **CFBundleIdentifier**: $BID"
+            echo "- **Versión / build**: $VER / $BUILD"
+            echo "- **Nombre**: $NOMBRE · iOS mínimo $MINOS · solo Portrait"
+            echo "- **ITSAppUsesNonExemptEncryption**: $ENC"
+            echo "- **Firma**: SIN FIRMAR (faltan los secretos de Apple o no se pidió)"
+            echo "- **SHA256 salimos-ios-unsigned.zip**: \`$APP_SHA\`"
+            echo "- **Commit**: \`${GITHUB_SHA}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Subir artefacto salimos-ios-unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: salimos-ios-unsigned
+          path: |
+            salida/salimos-ios-unsigned.zip
+            salida/App.xcarchive.zip
+            salida/SHA256SUMS.txt
+            salida/INFO.txt
+            salida/xcodebuild-unsigned.log
+          if-no-files-found: error
+          retention-days: 30
+
+      # ───────────────────────────── FIRMA + TESTFLIGHT (solo con secretos de Apple) ─────────────────────────────
+      - name: ¿Hay secretos de Apple?
+        id: apple
+        run: |
+          set -euo pipefail
+          HAY_API=false
+          if [ -n "${APP_STORE_CONNECT_API_KEY_ID:-}" ] && [ -n "${APP_STORE_CONNECT_ISSUER_ID:-}" ] && [ -n "${APP_STORE_CONNECT_API_KEY_P8_BASE64:-}" ]; then HAY_API=true; fi
+          if [ -n "${APPLE_CERTIFICATE_P12_BASE64:-}" ] && [ -n "${APPLE_CERTIFICATE_PASSWORD:-}" ] && [ -n "${APPLE_TEAM_ID:-}" ]; then
+            echo "firmar=true" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Firma::Certificado de distribución (.p12) en los Secrets: archive FIRMADO + .ipa para App Store."
+          elif [ "$HAY_API" = true ] && [ -n "${APPLE_TEAM_ID:-}" ]; then
+            # Firma EN LA NUBE (Xcode cloud signing): sin .p12 ni perfil a mano. Con la API key
+            # (rol Admin) xcodebuild crea el certificado Apple Distribution gestionado y el perfil.
+            echo "firmar=true" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Firma en la nube::Sin .p12: Xcode creará el certificado y el perfil con la API key de App Store Connect (APPLE_TEAM_ID + API key)."
+          else
+            echo "firmar=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=SIN FIRMA::Faltan APPLE_TEAM_ID + (APP_STORE_CONNECT_API_KEY_ID/_ISSUER_ID/_API_KEY_P8_BASE64) o bien el .p12. Solo se ha generado el archive SIN FIRMAR (no instalable). Ver APPS.md."
+          fi
+          if [ -n "${APP_STORE_CONNECT_API_KEY_ID:-}" ] && [ -n "${APP_STORE_CONNECT_ISSUER_ID:-}" ] && [ -n "${APP_STORE_CONNECT_API_KEY_P8_BASE64:-}" ]; then
+            echo "subir=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "subir=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=SIN TESTFLIGHT::Faltan APP_STORE_CONNECT_API_KEY_ID / _ISSUER_ID / _API_KEY_P8_BASE64: no se subirá nada a App Store Connect."
+          fi
+
+      - name: Keychain temporal + certificado + perfil
+        if: steps.apple.outputs.firmar == 'true'
+        run: |
+          set -euo pipefail
+          if [ -n "${APPLE_CERTIFICATE_P12_BASE64:-}" ]; then
+            KC="$RUNNER_TEMP/salimos.keychain-db"
+            KCPASS=$(uuidgen)
+            security create-keychain -p "$KCPASS" "$KC"
+            security set-keychain-settings -lut 21600 "$KC"
+            security unlock-keychain -p "$KCPASS" "$KC"
+            printf '%s' "$APPLE_CERTIFICATE_P12_BASE64" | tr -d ' \n\r\t' | base64 -d > "$RUNNER_TEMP/dist.p12"
+            test -s "$RUNNER_TEMP/dist.p12" || { echo "ERROR: el .p12 decodificado está vacío (¿APPLE_CERTIFICATE_P12_BASE64 mal copiado?)"; exit 1; }
+            security import "$RUNNER_TEMP/dist.p12" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KC"
+            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KCPASS" "$KC"
+            security list-keychain -d user -s "$KC" $(security list-keychains -d user | sed 's/"//g')
+            security find-identity -v -p codesigning "$KC"
+          else
+            echo "Sin .p12: firma en la nube con la API key (sin keychain propio)."
+          fi
+          if [ -n "${APPLE_PROVISIONING_PROFILE_BASE64:-}" ]; then
+            mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+            printf '%s' "$APPLE_PROVISIONING_PROFILE_BASE64" | tr -d ' \n\r\t' | base64 -d > "$RUNNER_TEMP/dist.mobileprovision"
+            UUID=$(security cms -D -i "$RUNNER_TEMP/dist.mobileprovision" | plutil -extract UUID raw -)
+            NOMBRE=$(security cms -D -i "$RUNNER_TEMP/dist.mobileprovision" | plutil -extract Name raw -)
+            cp "$RUNNER_TEMP/dist.mobileprovision" ~/Library/MobileDevice/Provisioning\ Profiles/"$UUID".mobileprovision
+            echo "PERFIL_NOMBRE=$NOMBRE" >> "$GITHUB_ENV"
+            echo "Perfil instalado: $NOMBRE ($UUID)"
+          else
+            echo "::notice title=Perfil::Sin APPLE_PROVISIONING_PROFILE_BASE64: se intentará firma automática (cloud signing) con la API key de App Store Connect."
+          fi
+          if [ -n "${APP_STORE_CONNECT_API_KEY_P8_BASE64:-}" ]; then
+            mkdir -p ~/private_keys
+            printf '%s' "$APP_STORE_CONNECT_API_KEY_P8_BASE64" | tr -d ' \n\r\t' | base64 -d > ~/private_keys/AuthKey_"$APP_STORE_CONNECT_API_KEY_ID".p8
+            echo "ASC_KEY_PATH=$HOME/private_keys/AuthKey_$APP_STORE_CONNECT_API_KEY_ID.p8" >> "$GITHUB_ENV"
+          fi
+
+      - name: Archive FIRMADO
+        # Solo en la vía .p12 (perfil manual). En la vía NUBE el archive de desarrollo exigiría
+        # un dispositivo registrado: se salta y se firma al EXPORTAR (perfil App Store, que no lo exige).
+        if: steps.apple.outputs.firmar == 'true' && env.APPLE_CERTIFICATE_P12_BASE64 != ''
+        run: |
+          set -euo pipefail
+          LOG="$RUNNER_TEMP/xcodebuild-signed.log"
+          EXTRA=()
+          if [ -n "${PERFIL_NOMBRE:-}" ]; then
+            EXTRA+=(CODE_SIGN_STYLE=Manual "PROVISIONING_PROFILE_SPECIFIER=$PERFIL_NOMBRE" 'CODE_SIGN_IDENTITY=Apple Distribution')
+          else
+            EXTRA+=(CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates)
+            [ -n "${ASC_KEY_PATH:-}" ] && EXTRA+=(-authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID")
+          fi
+          if ! xcodebuild \
+              -project "$PROYECTO" -scheme "$ESQUEMA" -configuration Release \
+              -sdk iphoneos -destination 'generic/platform=iOS' \
+              -archivePath "$RUNNER_TEMP/App-signed.xcarchive" archive \
+              -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
+              -skipPackagePluginValidation -skipMacroValidation \
+              "DEVELOPMENT_TEAM=$APPLE_TEAM_ID" "CURRENT_PROJECT_VERSION=$BUILD_NUM" "${EXTRA[@]}" > "$LOG" 2>&1; then
+            echo "::error title=xcodebuild::el archive firmado ha fallado"
+            grep -nE "error:|fatal error|\*\* ARCHIVE FAILED" "$LOG" | head -n 60 || true
+            tail -n 120 "$LOG"; exit 1
+          fi
+          grep -E "ARCHIVE SUCCEEDED" "$LOG"
+          codesign -dvv "$RUNNER_TEMP/App-signed.xcarchive/Products/Applications/App.app" 2>&1 | grep -E "Authority|Identifier|TeamIdentifier" || true
+
+      - name: Exportar .ipa (App Store) y subir a TestFlight
+        if: steps.apple.outputs.firmar == 'true'
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/export.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>uploadSymbols</key><true/>
+            <key>destination</key><string>export</string>
+            <key>signingStyle</key><string>$([ -n "${PERFIL_NOMBRE:-}" ] && echo manual || echo automatic)</string>
+          $([ -n "${PERFIL_NOMBRE:-}" ] && printf '  <key>provisioningProfiles</key><dict><key>es.saneas.salimos</key><string>%s</string></dict>\n' "$PERFIL_NOMBRE")
+          </dict></plist>
+          EOF
+          PB=/usr/libexec/PlistBuddy
+          AUTH=()
+          [ -n "${ASC_KEY_PATH:-}" ] && AUTH+=(-allowProvisioningUpdates -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID")
+          ARCH="$RUNNER_TEMP/App-signed.xcarchive"
+          if [ ! -d "$ARCH" ]; then
+            ARCH="$RUNNER_TEMP/App.xcarchive"
+            echo "Firma en la nube: exportando y firmando el archive sin firmar ($ARCH)"
+            # OJO, esto ya mordió en la app de Saneas (08/09/2026): un archive SIN firmar
+            # no lleva entitlements, y al exportar Xcode los deriva del binario. Resultado:
+            # el .ipa salía con application-identifier y poco más, y aps-environment se
+            # PERDÍA por el camino aunque el perfil sí lo tuviera. Los avisos no llegaban
+            # y no había ningún error que lo dijera.
+            # Se arregla firmando el archive a mano (ad-hoc) CON el fichero de permisos,
+            # para que el export los conserve. Los frameworks se firman sin permisos;
+            # Xcode los vuelve a firmar después.
+            APPB="$ARCH/Products/Applications/App.app"
+            ENT="$RUNNER_TEMP/ent.plist"; cp ios/App/App/App.entitlements "$ENT"
+            $PB -c "Add :application-identifier string $APPLE_TEAM_ID.$(${PB} -c 'Print :CFBundleIdentifier' "$APPB/Info.plist")" "$ENT"
+            $PB -c "Add :com.apple.developer.team-identifier string $APPLE_TEAM_ID" "$ENT"
+            find "$APPB/Frameworks" -maxdepth 1 \( -name '*.framework' -o -name '*.dylib' \) -print0 2>/dev/null | xargs -0 -I{} codesign -f -s - {}
+            codesign -f -s - --entitlements "$ENT" "$APPB"
+            echo "permisos ad-hoc del archive:"; codesign -d --entitlements :- "$APPB" 2>/dev/null | tr -d '\n' | cut -c1-1200; echo
+          fi
+          xcodebuild -exportArchive -archivePath "$ARCH" \
+            -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/export" ${AUTH[@]+"${AUTH[@]}"}
+          IPA=$(ls "$RUNNER_TEMP"/export/*.ipa | head -n1)
+          test -s "$IPA" || { echo "ERROR: no hay .ipa"; exit 1; }
+          mkdir -p salida-firmada
+          cp "$IPA" salida-firmada/salimos-ios.ipa
+          shasum -a 256 salida-firmada/salimos-ios.ipa | tee salida-firmada/SHA256SUMS.txt
+          IPA_SHA=$(shasum -a 256 salida-firmada/salimos-ios.ipa | cut -d' ' -f1)
+          {
+            echo "## Salimos iOS · .ipa FIRMADO"
+            echo "- **SHA256 salimos-ios.ipa**: \`$IPA_SHA\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.apple.outputs.subir }}" = "true" ]; then
+            # OJO: altool puede terminar con código 0 aunque Apple haya rechazado el
+            # paquete; el 04/10/2026 la compilación salió EN VERDE con un «VERIFY
+            # FAILED» y un «UPLOAD FAILED» dentro, y parecía que estaba subido. Así
+            # que no basta con mirar el código de salida: hay que leer lo que dice.
+            revisar() {
+              local fase="$1" registro="$2"
+              if grep -qE "VERIFY FAILED|UPLOAD FAILED|Failed to (validate|upload) package|ERROR: \[altool" "$registro"; then
+                echo "::error title=TestFlight::Apple ha rechazado el paquete en la fase '$fase'. Motivo:"
+                grep -E "Validation failed|Invalid bundle|detail :" "$registro" | head -n 10
+                exit 1
+              fi
+            }
+            VLOG="$RUNNER_TEMP/altool-validate.log"
+            xcrun altool --validate-app -f salida-firmada/salimos-ios.ipa -t ios \
+              --apiKey "$APP_STORE_CONNECT_API_KEY_ID" --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" 2>&1 | tee "$VLOG" || true
+            revisar "validación" "$VLOG"
+
+            ULOG="$RUNNER_TEMP/altool-upload.log"
+            xcrun altool --upload-app -f salida-firmada/salimos-ios.ipa -t ios \
+              --apiKey "$APP_STORE_CONNECT_API_KEY_ID" --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" 2>&1 | tee "$ULOG" || true
+            revisar "subida" "$ULOG"
+
+            echo "- **TestFlight**: subido a App Store Connect (procesa en unos minutos)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning title=SIN TESTFLIGHT::.ipa generado pero NO subido (faltan los secretos de la API de App Store Connect)."
+          fi
+
+      - name: Subir artefacto salimos-ios-ipa
+        if: steps.apple.outputs.firmar == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: salimos-ios-ipa
+          path: |
+            salida-firmada/salimos-ios.ipa
+            salida-firmada/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Limpiar keychain temporal
+        if: always() && steps.apple.outputs.firmar == 'true'
+        run: |
+          security delete-keychain "$RUNNER_TEMP/salimos.keychain-db" || true
+          rm -f "$RUNNER_TEMP/dist.p12" "$RUNNER_TEMP/dist.mobileprovision" ~/private_keys/AuthKey_*.p8 || true

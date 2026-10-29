@@ -1,0 +1,199 @@
+# Salimos · compila la app Android (Capacitor) en la nube y deja el .aab (y un .apk) como artefacto.
+# - Con los 4 secretos de firma (ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+#   ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD) el .aab sale FIRMADO con la clave de subida (Play App Signing).
+# - Sin ellos compila igual, pero SIN FIRMAR (sirve para validar el pipeline; Play no lo acepta).
+# Documentación: APPS.md en la raíz del repo.
+name: Android (Capacitor)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'ios/**'
+      - 'js/**'
+      - 'img/**'
+      - 'vendor/**'
+      - 'index.html'
+      - 'privacidad.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'capacitor.config.json'
+      - 'scripts/build-www.sh'
+      - '.github/workflows/**'
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Compilar .aab / .apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      # Google Play rechaza dos subidas con el mismo versionCode. Se usa el nº de ejecución
+      # del workflow, que nunca se repite y siempre sube.
+      ANDROID_VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: npm ci
+        run: npm ci --no-audit --no-fund
+
+      - name: Construir www/
+        run: |
+          set -euo pipefail
+          npm run build:www
+          test -f www/index.html
+
+      - name: Capacitor sync
+        run: npx cap sync android
+
+      - name: Java 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Android SDK
+        # v4 y no v3: la v3 intenta instalar el paquete «tools», que Google retiró del
+        # repositorio, y sdkmanager sale con error antes de empezar (02/10/2026). La v4
+        # instala solo platform-tools y usa el SDK que ya trae la imagen del runner.
+        uses: android-actions/setup-android@v4
+        with:
+          log-accepted-android-sdk-licenses: false
+
+      - name: Gradle (con caché)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Clave de subida (desde Secrets, si existen)
+        id: firma
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ] && [ -n "${ANDROID_KEYSTORE_PASSWORD:-}" ] && [ -n "${ANDROID_KEY_ALIAS:-}" ] && [ -n "${ANDROID_KEY_PASSWORD:-}" ]; then
+            KS="$RUNNER_TEMP/upload-key.jks"
+            # El tr quita saltos de línea y espacios: al copiar y pegar el base64
+            # desde un fichero o desde la pantalla casi siempre viene con alguno,
+            # y sin esto el decodificado falla con un error que no dice por qué.
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d ' \n\r\t' | base64 -d > "$KS"
+            test -s "$KS" || { echo "ERROR: el keystore decodificado está vacío (¿ANDROID_KEYSTORE_BASE64 mal copiado?)"; exit 1; }
+            echo "ANDROID_KEYSTORE_PATH=$KS" >> "$GITHUB_ENV"
+            echo "firmado=true" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Firma::Keystore de subida cargado desde los Secrets. El .aab saldrá FIRMADO."
+          else
+            echo "firmado=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=SIN FIRMA::Faltan secretos (ANDROID_KEYSTORE_BASE64 / _PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD). El .aab se compila SIN FIRMAR: vale para validar el pipeline, NO para subir a Google Play."
+          fi
+
+      - name: Gradle bundleRelease + assembleRelease
+        working-directory: android
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          # assembleDebug además de los de release: el APK de depuración va firmado con la
+          # clave de depuración de Android y SE PUEDE INSTALAR en un móvil ahora mismo. Los de
+          # release salen sin firmar mientras no estén los secretos, y Android no los instala.
+          ./gradlew --no-daemon --stacktrace bundleRelease assembleRelease assembleDebug
+
+      - name: Verificar artefactos (hash, manifest, applicationId, firma)
+        id: verificar
+        shell: bash
+        run: |
+          set -euo pipefail
+          AAB=$(ls android/app/build/outputs/bundle/release/*.aab | head -n1)
+          APK=$(ls android/app/build/outputs/apk/release/*.apk | head -n1)
+          test -s "$AAB" || { echo "ERROR: no hay .aab"; exit 1; }
+          test -s "$APK" || { echo "ERROR: no hay .apk"; exit 1; }
+          mkdir -p salida
+          cp "$AAB" salida/salimos-release.aab
+          cp "$APK" salida/salimos-release.apk
+          DBG=$(ls android/app/build/outputs/apk/debug/*.apk | head -n1)
+          test -s "$DBG" || { echo "ERROR: no hay .apk de depuración"; exit 1; }
+          cp "$DBG" salida/salimos-debug.apk
+          echo "== SHA256 =="
+          sha256sum salida/salimos-release.aab salida/salimos-release.apk | tee salida/SHA256SUMS.txt
+          AAB_SHA=$(sha256sum salida/salimos-release.aab | cut -d' ' -f1)
+          echo "aab_sha256=$AAB_SHA" >> "$GITHUB_OUTPUT"
+
+          echo "== Estructura del .aab =="
+          unzip -l salida/salimos-release.aab | grep -E 'base/manifest/AndroidManifest.xml|base/assets/public/index.html' || { echo "ERROR: el .aab no contiene el manifest o index.html"; exit 1; }
+
+          echo "== Manifest del .aab (bundletool) =="
+          gh release download --repo google/bundletool --pattern 'bundletool-all-*.jar' --dir "$RUNNER_TEMP" --clobber
+          BT=$(ls "$RUNNER_TEMP"/bundletool-all-*.jar | head -n1)
+          java -jar "$BT" dump manifest --bundle=salida/salimos-release.aab > salida/AndroidManifest.aab.xml
+          grep -o 'package="[^"]*"' salida/AndroidManifest.aab.xml
+          grep -o 'android:versionCode="[^"]*"' salida/AndroidManifest.aab.xml
+          grep -o 'android:versionName="[^"]*"' salida/AndroidManifest.aab.xml
+          grep -q 'package="es.saneas.salimos"' salida/AndroidManifest.aab.xml || { echo "ERROR: applicationId != es.saneas.salimos"; exit 1; }
+          grep -q 'android:usesCleartextTraffic="false"' salida/AndroidManifest.aab.xml || { echo "ERROR: usesCleartextTraffic no es false"; exit 1; }
+          VC=$(grep -o 'android:versionCode="[^"]*"' salida/AndroidManifest.aab.xml | head -n1 | cut -d'"' -f2)
+          [ "$VC" = "$ANDROID_VERSION_CODE" ] || { echo "ERROR: versionCode=$VC y debería ser $ANDROID_VERSION_CODE"; exit 1; }
+          VN=$(grep -o 'android:versionName="[^"]*"' salida/AndroidManifest.aab.xml | head -n1 | cut -d'"' -f2)
+
+          echo "== APK (aapt2 badging) =="
+          AAPT2=$(ls -d "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -n1)
+          "$AAPT2" dump badging salida/salimos-release.apk | grep -E "^package:|^application-label:|^sdkVersion|^targetSdkVersion|uses-permission" | tee salida/badging.txt
+          grep -q "package: name='es.saneas.salimos'" salida/badging.txt || { echo "ERROR: el APK no es es.saneas.salimos"; exit 1; }
+
+          echo "== Firma =="
+          if [ "${{ steps.firma.outputs.firmado }}" = "true" ]; then
+            jarsigner -verify -verbose:summary salida/salimos-release.aab | tail -n 3
+            jarsigner -verify salida/salimos-release.aab | grep -q "jar verified" || { echo "ERROR: el .aab no está correctamente firmado"; exit 1; }
+            echo "FIRMA=firmado con la clave de subida" >> salida/INFO.txt
+          else
+            echo "FIRMA=SIN FIRMAR (faltan los secretos)" >> salida/INFO.txt
+          fi
+          echo "VERSION=$VN ($VC)" >> salida/INFO.txt
+          echo "COMMIT=${GITHUB_SHA}" >> salida/INFO.txt
+
+          {
+            echo "## Salimos Android · build"
+            echo "- **applicationId**: es.saneas.salimos"
+            echo "- **versionName/versionCode**: $VN / $VC"
+            echo "- **Firma**: $([ "${{ steps.firma.outputs.firmado }}" = "true" ] && echo 'FIRMADO (clave de subida)' || echo 'SIN FIRMAR (faltan secretos)')"
+            echo "- **SHA256 .aab**: \`$AAB_SHA\`"
+            echo "- **Commit**: \`${GITHUB_SHA}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Subir artefacto .aab
+        uses: actions/upload-artifact@v4
+        with:
+          name: salimos-android-aab
+          path: |
+            salida/salimos-release.aab
+            salida/SHA256SUMS.txt
+            salida/INFO.txt
+            salida/AndroidManifest.aab.xml
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Subir artefacto .apk (prueba directa en un móvil)
+        uses: actions/upload-artifact@v4
+        with:
+          name: salimos-android-apk
+          path: |
+            salida/salimos-release.apk
+            salida/salimos-debug.apk
+            salida/badging.txt
+          if-no-files-found: error
+          retention-days: 30

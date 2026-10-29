@@ -1,0 +1,14 @@
+{
+  "appId": "es.saneas.salimos",
+  "appName": "Salimos",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#faf8ff"
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#faf8ff",
+    "preferredContentMode": "mobile"
+  }
+}

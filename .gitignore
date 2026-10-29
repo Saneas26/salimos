@@ -1,3 +1,7 @@
 .DS_Store
 stitch/
 node_modules/
+www/
+android/app/build/
+android/.gradle/
+ios/App/App/public/

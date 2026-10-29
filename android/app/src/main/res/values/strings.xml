@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Salimos</string>
+    <string name="title_activity_main">Salimos</string>
+    <string name="package_name">es.saneas.salimos</string>
+    <string name="custom_url_scheme">es.saneas.salimos</string>
+</resources>

@@ -98,8 +98,9 @@
     }]
   });
   document.querySelectorAll('.grupo-pie').forEach(function (p) { p.innerHTML = GrupoSaneas.gridHTML(); });
-  /* Contador del grupo: solo fuera de este Mac, para no contar las pruebas. */
-  if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+  /* Contador del grupo: solo fuera de este Mac, para no contar las pruebas.
+     Dentro de la app de las tiendas la dirección también es «localhost», pero sí cuenta. */
+  if (window.Capacitor || !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
     var t = document.createElement('script'); t.src = 'js/telemetria.js'; document.body.appendChild(t);
   }
 </script>
