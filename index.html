@@ -5,46 +5,84 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Salimos · Dónde salir en Gran Canaria</title>
 <meta name="description" content="Dónde comer, tomar algo, bailar o ligar en Gran Canaria, según la gente que sale. Gratis, sin anuncios y sin patrocinios.">
-<meta name="theme-color" content="#0F172A">
+<meta name="theme-color" content="#faf8ff">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="img/icono.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="img/icono-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/salimos.css?v=5">
+<!-- Diseño calcado de Stitch (stitch/*/code.html): misma letra, iconos, colores y configuración de Tailwind. -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}}::-webkit-scrollbar{display:none;}</style>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "primary-container": "#f59e0b", "surface-dim": "#d2d9f4", "secondary": "#4059aa", "surface-container-high": "#e2e7ff", "surface": "#faf8ff", "on-secondary-fixed": "#00164e", "primary": "#855300", "on-secondary": "#ffffff", "surface-container-highest": "#dae2fd", "tertiary-fixed": "#6ffbbe", "error": "#ba1a1a", "surface-variant": "#dae2fd", "on-primary": "#ffffff", "on-background": "#131b2e", "primary-fixed-dim": "#ffb95f", "surface-tint": "#855300", "tertiary-container": "#30c88f", "outline": "#867461", "on-tertiary-fixed": "#002113", "on-tertiary-fixed-variant": "#005236", "surface-container": "#eaedff", "surface-bright": "#faf8ff", "background": "#faf8ff", "secondary-container": "#8fa7fe", "on-surface-variant": "#534434", "surface-container-low": "#f2f3ff", "secondary-fixed": "#dce1ff", "outline-variant": "#d8c3ad", "on-primary-fixed": "#2a1700", "error-container": "#ffdad6", "on-error-container": "#93000a", "on-surface": "#131b2e", "tertiary": "#006c49", "on-error": "#ffffff", "primary-fixed": "#ffddb8", "inverse-surface": "#283044", "on-primary-container": "#613b00", "inverse-on-surface": "#eef0ff", "surface-container-lowest": "#ffffff", "tertiary-fixed-dim": "#4edea3", "inverse-primary": "#ffb95f", "on-tertiary-container": "#004e34", "on-secondary-container": "#1d3989", "on-primary-fixed-variant": "#653e00", "on-tertiary": "#ffffff", "secondary-fixed-dim": "#b6c4ff", "on-secondary-fixed-variant": "#264191" }, "borderRadius": { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" }, "spacing": { "space-md": "0.75rem", "gutter": "1rem", "margin-desktop": "2rem", "space-sm": "0.5rem", "gutter-mobile": "0.75rem", "space-xl": "1.5rem", "space-lg": "1rem", "space-xs": "0.25rem", "margin": "1rem" }, "fontFamily": { "headline-lg-mobile": ["Plus Jakarta Sans"], "label-prominent": ["Plus Jakarta Sans"], "display-hero": ["Plus Jakarta Sans"], "label-badge": ["Plus Jakarta Sans"], "body-sm": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "body-lg": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"], "score-display": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "label-micro": ["Plus Jakarta Sans"] }, "fontSize": { "headline-lg-mobile": ["26px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "label-prominent": ["13px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "700" }], "display-hero": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.03em", "fontWeight": "800" }], "label-badge": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "700" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "headline-lg": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "500" }], "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.015em", "fontWeight": "700" }], "score-display": ["28px", { "lineHeight": "32px", "letterSpacing": "-0.03em", "fontWeight": "800" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "label-micro": ["10px", { "lineHeight": "12px", "letterSpacing": "0.03em", "fontWeight": "600" }] } } } };</script>
+<style>
+  body { min-height: max(884px, 100dvh); }
+  .no-scrollbar { scrollbar-width: none; }
+  /* Botón del Grupo Saneas sobre la cabecera clara de Stitch */
+  .gs-boton { background: none; border: 0; padding: 4px 8px; cursor: pointer; text-align: right; line-height: 1.15; border-radius: 9999px; }
+  .gs-boton:hover { background: #eaedff; }
+  .gs-b-marca { display: block; font: 700 13px/16px 'Plus Jakarta Sans', sans-serif; letter-spacing: .02em; color: #131b2e; }
+  .gs-b-accion { display: block; font: 600 10px/12px 'Plus Jakarta Sans', sans-serif; letter-spacing: .03em; color: #534434; }
+  /* Barras de votar: el pulgar en ámbar, como accent-primary-container */
+  input[type=range].rating-slider { accent-color: #f59e0b; }
+  .sin-votar input[type=range] { opacity: .45; }
+  .tostada { position: fixed; left: 50%; bottom: 88px; transform: translate(-50%, 12px); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 60; }
+  .tostada.ver { opacity: 1; transform: translate(-50%, 0); }
+  .boton-off:disabled { opacity: .5; }
+  .h-13 { height: 3.25rem; }
+  .shadow-xs { box-shadow: 0 1px 2px rgba(19,27,46,.06); }
+
+  /* Animaciones de Stitch (splash_manifiesto_tico_micro_animaciones_2), tal cual */
+  @keyframes fadeInUpStagger { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  .animate-screen-enter { animation: fadeInUpStagger 0.65s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .page-exit { transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1), transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), filter 0.45s ease; opacity: 0 !important; transform: scale(0.982) translateY(6px); filter: blur(2px); pointer-events: none; }
+  @keyframes pulseGlow { 0%, 100% { transform: scale(1); box-shadow: 0 0 25px rgba(245, 158, 11, 0.35); } 50% { transform: scale(1.08); box-shadow: 0 0 45px rgba(245, 158, 11, 0.65); } }
+  .pulse-grow { animation: pulseGlow 1.4s ease-in-out infinite; }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px -2px rgba(245, 158, 11, 0.4), 0 0 8px 1px rgba(245, 158, 11, 0.25); border-color: rgba(245, 158, 11, 0.7); transform: scale(1.015); }
+    50% { box-shadow: 0 0 32px 2px rgba(245, 158, 11, 0.6), 0 0 14px 3px rgba(245, 158, 11, 0.38); border-color: rgba(245, 158, 11, 0.95); transform: scale(1.025); }
+  }
+  .pillar-card { border: 1.5px solid transparent; transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease; }
+  .pillar-card.pillar-active { border-color: rgba(245, 158, 11, 0.85); animation: pulse-glow 2.2s ease-in-out infinite; }
+  .pillar-card.pillar-active .pillar-badge { background-color: #f59e0b !important; color: #2a1700 !important; box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); font-weight: 800; }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-screen-enter, .page-exit, .pulse-grow, .pillar-card.pillar-active { animation: none !important; transition: none !important; }
+    .pillar-card.pillar-active { border-color: rgba(245, 158, 11, 0.8); box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
+  }
+</style>
 </head>
-<body>
+<body class="bg-surface font-body-md text-on-surface antialiased flex flex-col min-h-screen">
 
-<header class="cabecera">
-  <a class="marca" href="#/explorar" aria-label="Salimos, volver al inicio">
-    <span class="marca-nombre">Salimos<span class="marca-punto">?</span></span>
-    <span class="marca-isla">Gran Canaria</span>
+<header class="cabecera fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-gutter flex items-center justify-between gap-space-sm">
+  <a class="flex items-center gap-space-sm min-w-0" href="#/explorar" aria-label="Salimos, volver al inicio">
+    <img alt="" class="h-8 w-8 rounded-DEFAULT object-contain flex-shrink-0" src="img/icono.svg">
+    <div class="flex flex-col min-w-0"><div class="flex items-center gap-space-xs"><span class="font-label-prominent text-label-prominent text-on-surface flex-shrink-0">Salimos</span><span class="px-1.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-micro text-label-micro uppercase tracking-wider min-w-0 truncate">Gran Canaria</span></div><span class="font-label-micro text-label-micro text-on-surface-variant truncate" id="seccion">Explorar</span></div>
   </a>
-  <button type="button" class="gs-boton" onclick="GrupoSaneas.abrirMenu()" aria-label="Ver las apps del Grupo Saneas">
-    <span class="gs-b-marca">Grupo <b>Saneas</b> &#9656;</span>
-    <span class="gs-b-accion">despliega</span>
-  </button>
-</header>
+  <div class="flex items-center gap-space-xs flex-shrink-0">
+    <button type="button" class="gs-boton" onclick="GrupoSaneas.abrirMenu()" aria-label="Ver las apps del Grupo Saneas"><span class="gs-b-marca">Grupo <b>Saneas</b> &#9656;</span><span class="gs-b-accion">despliega</span></button>
+    <a class="w-11 h-11 flex items-center justify-center rounded-full hover:bg-surface-container active:scale-95 transition-all" href="#/tu" aria-label="Tu cuenta"><span class="material-symbols-outlined text-[28px] text-secondary" style="font-variation-settings: 'FILL' 1;">account_circle</span></a>
+  </div>
+</div></header>
 
-<main id="vista" tabindex="-1"></main>
+<main class="flex flex-col relative w-full pt-16 pb-24 bg-surface outline-none" id="vista" tabindex="-1"></main>
 
-<footer class="pie" id="pie">
-  <p class="pie-promesa">Aquí nadie paga: ni locales, ni marcas, ni anuncios. Solo cuenta lo que vota la gente.</p>
-  <p class="rot">EL GRUPO SANEAS</p>
+<footer class="px-gutter-mobile pb-28 flex flex-col gap-space-md" id="pie">
+  <aside class="flex items-center gap-2 p-3 rounded-full bg-on-surface text-surface-container-lowest shadow-lg"><span class="w-2.5 h-2.5 rounded-full bg-tertiary-fixed animate-ping flex-shrink-0 ml-1"></span><span class="font-label-badge text-label-badge">Aquí nadie paga: ni locales, ni marcas, ni anuncios.</span></aside>
+  <p class="font-label-micro text-label-micro text-on-surface-variant uppercase tracking-wider font-bold px-1">El Grupo Saneas</p>
   <div class="grupo-pie"></div>
-  <p class="pie-enlaces"><a href="privacidad.html">Privacidad</a> · <a href="#/como-funciona">Cómo funciona</a></p>
+  <p class="font-label-prominent text-label-prominent text-center text-secondary"><a href="privacidad.html">Privacidad</a> · <a href="#/como-funciona">Cómo funciona</a></p>
 </footer>
 
-<nav class="pestanas" aria-label="Secciones">
-  <a href="#/explorar" data-tab="explorar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Explorar</span></a>
-  <a href="#/zonas" data-tab="zonas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Zonas</span></a>
-  <a href="#/recomendar" data-tab="recomendar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Recomendar</span></a>
-  <a href="#/tu" data-tab="tu"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>Tú</span></a>
-</nav>
+<nav class="pestanas fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-4px_20px_rgba(19,27,46,0.06)]" aria-label="Secciones"><div class="flex justify-around items-center h-16 px-gutter-mobile">
+  <a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="explorar" href="#/explorar"><span class="material-symbols-outlined text-[22px]">explore</span><span class="font-label-badge text-label-badge">Explorar</span></a>
+  <a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="zonas" href="#/zonas"><span class="material-symbols-outlined text-[22px]">map</span><span class="font-label-badge text-label-badge">Zonas</span></a>
+  <a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="votar" href="#/votar"><span class="material-symbols-outlined text-[22px]">rate_review</span><span class="font-label-badge text-label-badge">Votar</span></a>
+  <a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="recomendar" href="#/recomendar"><div class="w-7 h-7 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container"><span class="material-symbols-outlined text-[18px]">add</span></div><span class="font-label-badge text-label-badge">Añadir</span></a>
+  <a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="top" href="#/top"><span class="material-symbols-outlined text-[22px]">leaderboard</span><span class="font-label-badge text-label-badge">Top Listas</span></a>
+</div></nav>
 
-<div class="tostada" id="tostada" role="status" aria-live="polite"></div>
+<div class="tostada px-4 py-3 rounded-full bg-on-surface text-surface-container-lowest font-label-prominent text-label-prominent shadow-lg" id="tostada" role="status" aria-live="polite"></div>
 
 <script src="js/grupo-saneas.js"></script>
 <script>
@@ -66,7 +104,7 @@
   }
 </script>
 <script src="vendor/supabase.js"></script>
-<script src="js/datos.js?v=4"></script>
-<script src="js/app.js?v=8"></script>
+<script src="js/datos.js?v=5"></script>
+<script src="js/app.js?v=9"></script>
 </body>
 </html>

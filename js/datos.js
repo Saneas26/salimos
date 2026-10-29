@@ -1,35 +1,36 @@
 /* Salimos · lo fijo: tipos de sitio, criterios, preguntas rápidas, zonas y tramos de edad.
+   Cada uno lleva su icono de Material Symbols, el juego de iconos del diseño de Stitch.
    Los locales y los votos vienen de Supabase (apartado «salimos» del proyecto Gajos).
    Si se toca un criterio o una respuesta, hay que tocar también sql/01-salimos.sql. */
 (function () {
   var TIPOS = [
-    { id: 'restaurante', nombre: 'Restaurante',    plural: 'Comer',        emoji: '🍽️', color: '#FDE7C2' },
-    { id: 'guachinche',  nombre: 'Guachinche',     plural: 'Guachinches',  emoji: '🍖', color: '#FBD9C4' },
-    { id: 'terraza',     nombre: 'Terraza',        plural: 'Terrazas',     emoji: '☀️', color: '#FEF3C7' },
-    { id: 'copas',       nombre: 'Bar de copas',   plural: 'Copas',        emoji: '🍸', color: '#DBE4FF' },
-    { id: 'musica',      nombre: 'Bar de música',  plural: 'Música',       emoji: '🎸', color: '#E4DCFB' },
-    { id: 'discoteca',   nombre: 'Discoteca',      plural: 'Discotecas',   emoji: '🪩', color: '#F5D9F0' },
-    { id: 'vinoteca',    nombre: 'Vinoteca',       plural: 'Vinotecas',    emoji: '🍷', color: '#F6D5D9' }
+    { id: 'restaurante', nombre: 'Restaurante',    plural: 'Comer',        icono: 'restaurant' },
+    { id: 'guachinche',  nombre: 'Guachinche',     plural: 'Guachinches',  icono: 'outdoor_grill' },
+    { id: 'terraza',     nombre: 'Terraza',        plural: 'Terrazas',     icono: 'deck' },
+    { id: 'copas',       nombre: 'Bar de copas',   plural: 'Copas',        icono: 'local_bar' },
+    { id: 'musica',      nombre: 'Bar de música',  plural: 'Música',       icono: 'music_note' },
+    { id: 'discoteca',   nombre: 'Discoteca',      plural: 'Discotecas',   icono: 'nightlife' },
+    { id: 'vinoteca',    nombre: 'Vinoteca',       plural: 'Vinotecas',    icono: 'wine_bar' }
   ];
 
   // Base común: la votan todos los locales.
   var BASE = [
-    { id: 'limpieza',      nombre: 'Limpieza',       emoji: '🧼', ayuda: 'Baños, barra, mesas y cocina' },
-    { id: 'ambiente',      nombre: 'Ambiente',       emoji: '✨', ayuda: 'Cómo se está: gente, luz, ruido' },
-    { id: 'servicio',      nombre: 'Servicio',       emoji: '🙋', ayuda: 'Trato y rapidez' },
-    { id: 'consumiciones', nombre: 'Consumiciones',  emoji: '🥂', ayuda: 'Lo que comes y bebes: calidad y cantidad' },
-    { id: 'precio',        nombre: 'Precio justo',   emoji: '💶', ayuda: 'Lo que pagas por lo que te dan' },
-    { id: 'ubicacion',     nombre: 'Ubicación',      emoji: '📍', ayuda: 'Dónde está y qué hay alrededor' },
-    { id: 'parking',       nombre: 'Parking',        emoji: '🚗', ayuda: 'Si se aparca fácil' },
-    { id: 'guagua',        nombre: 'Guagua',         emoji: '🚌', ayuda: 'Si se llega bien en transporte público' }
+    { id: 'limpieza',      nombre: 'Limpieza',       icono: 'sanitizer', ayuda: 'Baños, barra, mesas y cocina' },
+    { id: 'ambiente',      nombre: 'Ambiente',       icono: 'mood', ayuda: 'Cómo se está: gente, luz, ruido' },
+    { id: 'servicio',      nombre: 'Servicio',       icono: 'room_service', ayuda: 'Trato y rapidez' },
+    { id: 'consumiciones', nombre: 'Consumiciones',  icono: 'local_bar', ayuda: 'Lo que comes y bebes: calidad y cantidad' },
+    { id: 'precio',        nombre: 'Precio justo',   icono: 'euro', ayuda: 'Lo que pagas por lo que te dan' },
+    { id: 'ubicacion',     nombre: 'Ubicación',      icono: 'location_on', ayuda: 'Dónde está y qué hay alrededor' },
+    { id: 'parking',       nombre: 'Parking',        icono: 'directions_car', ayuda: 'Si se aparca fácil' },
+    { id: 'guagua',        nombre: 'Guagua',         icono: 'directions_bus', ayuda: 'Si se llega bien en transporte público' }
   ];
 
   // Extras: solo en los tipos de local donde tienen sentido.
   var EXTRAS = [
-    { id: 'carta',    nombre: 'Carta',         emoji: '📋', ayuda: 'Variedad y platos que merecen la pena', tipos: ['restaurante', 'guachinche'] },
-    { id: 'vinoteca', nombre: 'Vinos',         emoji: '🍷', ayuda: 'Carta de vinos y cómo los sirven',      tipos: ['restaurante', 'vinoteca'] },
-    { id: 'musica',   nombre: 'Música',        emoji: '🎶', ayuda: 'La música y el volumen',                tipos: ['copas', 'musica', 'discoteca'] },
-    { id: 'vistas',   nombre: 'Sombra y vistas', emoji: '🌅', ayuda: 'Lo que se ve y si se está a gusto al sol', tipos: ['terraza'] }
+    { id: 'carta',    nombre: 'Carta',         icono: 'restaurant_menu', ayuda: 'Variedad y platos que merecen la pena', tipos: ['restaurante', 'guachinche'] },
+    { id: 'vinoteca', nombre: 'Vinos',         icono: 'wine_bar', ayuda: 'Carta de vinos y cómo los sirven',      tipos: ['restaurante', 'vinoteca'] },
+    { id: 'musica',   nombre: 'Música',        icono: 'music_note', ayuda: 'La música y el volumen',                tipos: ['copas', 'musica', 'discoteca'] },
+    { id: 'vistas',   nombre: 'Sombra y vistas', icono: 'wb_twilight', ayuda: 'Lo que se ve y si se está a gusto al sol', tipos: ['terraza'] }
   ];
 
   var RAPIDAS = [
