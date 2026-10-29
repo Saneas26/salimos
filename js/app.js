@@ -673,7 +673,7 @@
     seccion('Entrar');
     vista.innerHTML = '<div class="flex flex-col w-full px-gutter pt-space-md pb-8 gap-space-lg animate-screen-enter">' +
       bannerOscuro('key', 'Sin contraseña', soloEdad ? 'Un paso más' : 'Entra para votar',
-        soloEdad ? 'Ya has entrado con ' + esc(YO.sesion.user.email) + '. Para votar en Salimos, confirma esto.' : 'Te mandamos un código de 6 cifras a tu correo. Así cada persona vota una sola vez por sitio.') +
+        soloEdad ? 'Ya has entrado con ' + esc(YO.sesion.user.email) + '. Para votar en Salimos, confirma esto.' : 'Te mandamos un código a tu correo. Así cada persona vota una sola vez por sitio.') +
       '<form class="flex flex-col gap-space-lg" id="f1" novalidate>' +
       (soloEdad ? '' : '<div class="flex flex-col gap-1.5">' + etiquetaCampo('mail', 'Tu correo', 'correo') + '<input class="' + INPUT + '" type="email" id="correo" autocomplete="email" inputmode="email" placeholder="nombre@correo.com" required></div>') +
       casilla('mayor', '<strong>Tengo 18 años o más.</strong>') +
@@ -682,7 +682,7 @@
       '<p class="font-label-prominent text-label-prominent text-center text-error" id="err1" role="alert"></p></div></form>' +
       '<form class="flex flex-col gap-space-lg" id="f2" hidden novalidate><div class="flex flex-col gap-1.5">' + etiquetaCampo('pin', 'Código que te ha llegado', 'cod') +
       '<span class="font-body-sm text-body-sm text-on-surface-variant" id="aquien"></span>' +
-      '<input class="' + INPUT + ' text-center font-score-display text-score-display tracking-[0.4em]" type="text" id="cod" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="······"></div>' +
+      '<input class="' + INPUT + ' text-center font-score-display text-score-display tracking-[0.4em]" type="text" id="cod" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="········"></div>' +
       '<div class="flex flex-col gap-2"><button class="' + BOTON + '" type="submit">' + ic('login', 'text-[22px]') + 'Entrar</button>' +
       '<p class="font-label-micro text-label-micro text-center text-on-surface-variant">¿No llega? Mira en «Correo no deseado» o espera un minuto.</p>' +
       '<p class="font-label-prominent text-label-prominent text-center text-error" id="err2" role="alert"></p></div></form></div>';
@@ -707,6 +707,17 @@
       bt.disabled = true;
       try {
         if (soloEdad) { await terminar(); return; }
+        /* La cuenta con la que revisan Apple y Google (la misma de Trivial, que comparte las
+           cuentas): no pueden leer nuestro correo, así que para ESTA dirección —y solo para
+           esta— el servidor da el código (función «codigo-demo») y sale ya escrito. */
+        if (correo === 'revision@saneas.es') {
+          var dm = await sb.functions.invoke('codigo-demo', { body: { email: correo } });
+          if (dm.error || !dm.data || !dm.data.codigo) throw new Error('No se ha podido preparar la cuenta de revisión.');
+          f1.hidden = true; document.getElementById('f2').hidden = false;
+          document.getElementById('aquien').textContent = 'Cuenta de revisión: el código ya está escrito. Pulsa «Entrar».';
+          document.getElementById('cod').value = dm.data.codigo;
+          bt.disabled = false; return;
+        }
         var r = await sb.auth.signInWithOtp({ email: correo, options: { shouldCreateUser: true, emailRedirectTo: VUELTA } });
         if (r.error) throw r.error;
         f1.hidden = true; document.getElementById('f2').hidden = false;
@@ -718,7 +729,7 @@
     document.getElementById('f2').onsubmit = async function (e) {
       e.preventDefault();
       var err = document.getElementById('err2'), bt = this.querySelector('button'), cod = document.getElementById('cod').value.trim();
-      if (!/^\d{6}$/.test(cod)) { err.textContent = 'El código son 6 cifras.'; return; }
+      if (!/^\d{6,10}$/.test(cod)) { err.textContent = 'Escribe el código tal como te ha llegado, solo las cifras.'; return; }
       bt.disabled = true; err.textContent = '';
       var r = await sb.auth.verifyOtp({ email: correo, token: cod, type: 'email' });
       if (r.error) { bt.disabled = false; err.textContent = 'Ese código no es. Mira el correo otra vez.'; return; }
