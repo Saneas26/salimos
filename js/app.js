@@ -16,7 +16,7 @@
   var TODOS = [];                                    // de salimos_locales(): los de todos los destinos
   var LOCALES = [];                                  // los del destino elegido arriba
   var DESTINO = leer('destino', 'Gran Canaria');
-  var YO = { sesion: null, perfil: false, admin: false, votos: {} };
+  var YO = { sesion: null, perfil: false, admin: false, votos: {}, checkins: {} };
 
   async function cargarLocales() {
     var r = await sb.rpc('salimos_locales');
@@ -41,10 +41,10 @@
   async function cargarYo() {
     var s = await sb.auth.getSession();
     YO.sesion = s.data.session;
-    if (!YO.sesion) { YO.perfil = false; YO.admin = false; YO.votos = {}; return; }
+    if (!YO.sesion) { YO.perfil = false; YO.admin = false; YO.votos = {}; YO.checkins = {}; return; }
     var r = await sb.rpc('salimos_mi_estado');
     if (r.error) throw r.error;
-    YO.perfil = r.data.perfil; YO.admin = r.data.admin; YO.votos = r.data.votos || {};
+    YO.perfil = r.data.perfil; YO.admin = r.data.admin; YO.votos = r.data.votos || {}; YO.checkins = r.data.checkins || {}; YO.cuentanTodos = r.data.cuentan_todos;
   }
   /* Los mensajes de error de las funciones ya vienen en castellano y para el usuario. */
   function textoError(e) { return (e && e.message) || 'No se ha podido. Prueba otra vez.'; }
@@ -466,6 +466,7 @@
       '<div class="mt-space-md pt-space-sm bg-on-secondary-fixed/30 rounded-DEFAULT px-3 py-2 flex items-center justify-between gap-2 relative z-10"><div class="flex items-center gap-2">' + ic('shield_lock', 'text-[18px] text-tertiary-fixed') +
       '<span class="font-label-micro text-label-micro text-surface-container-lowest">' + (c.votos < S.MIN_VOTOS_RANKING ? 'Entra en los rankings con ' + S.MIN_VOTOS_RANKING + ' votos' : 'Una persona, un voto por sitio') + '</span></div>' +
       '<span class="font-label-badge text-label-badge text-primary-fixed flex-shrink-0">100% ' + esc(l.destino.toUpperCase()) + '</span></div></div></div>' +
+      tarjetaCheckin(l) +
       (etiquetas ? '<div class="px-gutter pb-space-lg"><div class="flex items-center justify-between mb-space-xs"><h3 class="font-headline-md text-headline-md text-on-surface">Lo que tiene</h3><span class="font-label-micro text-label-micro text-secondary font-semibold">Datos del sitio</span></div>' +
         '<div class="flex flex-wrap gap-space-xs mt-space-xs">' + etiquetas + '</div></div>' : '') +
       '<div class="px-gutter pb-space-lg"><div class="flex items-center justify-between mb-space-xs"><h3 class="font-headline-md text-headline-md text-on-surface">Veredicto de la Comunidad</h3><span class="font-label-micro text-label-micro text-secondary font-semibold">Basado en votos</span></div>' +
@@ -481,6 +482,7 @@
       '<a class="flex-[1.4] h-12 rounded-full bg-primary-container text-on-surface font-headline-md text-[15px] flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95 hover:brightness-105" href="#/votar/' + l.id + '">' + ic('how_to_vote', 'text-[20px]') + '<span>' + (c.mio ? 'Cambiar mi voto' : 'Evaluar este local') + '</span></a></div></div></div>';
 
     document.getElementById('atras').onclick = function () { if (history.length > 1) history.back(); else location.hash = '#/explorar'; };
+    var bc = document.getElementById('checkin'); if (bc) bc.onclick = function () { hacerCheckin(l, bc); };
     document.getElementById('btn-bookmark').onclick = function () {
       var g = guardados(), i = g.indexOf(id), on = i < 0, b = document.getElementById('bookmark-icon');
       if (on) g.push(id); else g.splice(i, 1);
@@ -517,7 +519,7 @@
         '<button type="button" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-highest text-on-surface-variant font-label-badge text-label-badge active:scale-95 transition-all" data-bloquear="' + esc(k.autor) + '">' + ic('block', 'text-[14px]') + 'Bloquear a esta persona</button></div>';
       return '<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm"><div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2">' +
         '<div class="w-9 h-9 rounded-full ' + (k.mio ? 'bg-primary-fixed text-on-primary-fixed' : 'bg-secondary-fixed text-on-secondary-fixed') + ' flex items-center justify-center">' + ic('person', 'text-[20px]', true) + '</div>' +
-        '<div><div class="flex items-center gap-1.5"><span class="font-label-prominent text-label-prominent text-on-surface">' + (k.mio ? 'Tu comentario' : 'Persona con cuenta') + '</span>' + ic('check_circle', 'text-[15px] text-tertiary', true) + '</div>' +
+        '<div><div class="flex items-center gap-1.5"><span class="font-label-prominent text-label-prominent text-on-surface">' + (k.mio ? 'Tu comentario' : k.verificado ? 'Estuvo allí' : 'Persona con cuenta') + '</span>' + ic(k.verificado ? 'verified' : 'check_circle', 'text-[15px] text-tertiary', true) + '</div>' +
         '<span class="font-label-micro text-label-micro text-on-surface-variant">' + esc(l.destino) + ' • ' + haceCuanto(k.fecha) + '</span></div></div></div>' +
         '<p class="font-body-sm text-body-sm text-on-surface">"' + esc(k.texto) + '"</p>' + acciones + '</div>';
     }).join('') : '<p class="font-body-sm text-body-sm text-on-surface-variant">No hay comentarios que mostrar.</p>';
@@ -584,7 +586,7 @@
     var crits = S.criteriosDe(l.tipo, l.tipo2);
     var PALABRA = ['Fatal', 'Fatal', 'Muy mal', 'Mal', 'Flojo', 'Regular', 'Aprobado', 'Bien', 'Muy bien', 'Excelente', 'Perfecto'];
 
-    vista.innerHTML = '<div class="px-gutter pt-space-md pb-space-lg flex flex-col gap-space-md animate-screen-enter">' + cabeceraVotar(l) +
+    vista.innerHTML = '<div class="px-gutter pt-space-md pb-space-lg flex flex-col gap-space-md animate-screen-enter">' + cabeceraVotar(l) + avisoVerificado(l, previo) +
       '<div class="flex flex-col gap-space-sm"><div class="flex items-center justify-between px-1"><h2 class="font-label-prominent text-label-prominent text-on-surface uppercase tracking-wider">' + crits.length + ' cosas que votar</h2>' +
       '<span class="font-label-badge text-label-badge text-secondary font-semibold">Toca o desliza</span></div>' +
       crits.map(function (c) {
@@ -844,6 +846,7 @@
     var p = [
       ['how_to_reg', 'bg-tertiary-fixed text-on-tertiary-fixed', 'Quién vota', 'Personas con cuenta. Se entra con el correo y un código, sin contraseña. Cada persona tiene un voto por sitio, que puede cambiar cuando quiera.'],
       ['checklist_rtl', 'bg-primary-fixed text-on-primary-fixed', 'Cómo sale la nota', 'Cada sitio se vota por partes: limpieza, ambiente, servicio, consumiciones, precio, ubicación, parking y guagua, y además lo propio de cada tipo de sitio (la carta, los vinos, la música o las vistas). La nota general es la media de esas partes. Un sitio no entra en los rankings hasta tener ' + S.MIN_VOTOS_RANKING + ' votos.'],
+      ['verified', 'bg-tertiary-container text-on-tertiary-container', 'Voto verificado: «Estuvo allí»', 'Si estás en el local, pulsa «Estoy aquí» en su ficha: comprobamos que estás a menos de 150 m y tu voto sale con el sello «Estuvo allí». Tienes 24 horas para votar, así en una discoteca haces check-in en la puerta y votas al día siguiente. Hasta el 30 de noviembre de 2026 cuentan todos los votos; desde el 1 de diciembre, en la nota y en los rankings solo cuentan los verificados.'],
       ['money_off', 'bg-error-container text-on-error-container', 'Quién paga', 'Nadie. Ningún local, marca ni anunciante puede pagar por salir, subir o quitar una nota. Salimos es del Grupo Saneas y es gratis.'],
       ['fingerprint', 'bg-secondary-fixed text-on-secondary-fixed', 'Votos falsos', 'Una cuenta solo puede votar una vez cada sitio, y hay un tope de sitios nuevos al día. Vigilamos los votos raros —muchas cuentas nuevas votando el mismo sitio de golpe— y los que sean de mentira no cuentan.'],
       ['forum', 'bg-surface-container-highest text-on-surface', 'Comentarios', 'Se publican al momento. Quitamos los que insultan, señalan a trabajadores con nombre o no tienen que ver con el sitio. Cualquiera puede denunciar un comentario y lo revisamos en menos de 24 horas; con tres denuncias se retira solo hasta que lo miremos. Y si alguien te molesta, puedes bloquearlo y no volverás a ver lo que escribe.']
@@ -907,11 +910,11 @@
     return 12742 * Math.asin(Math.sqrt(x * x + Math.cos(a * r) * Math.cos(c * r) * y * y));
   }
   function distancia(km) { return km < 1 ? Math.round(km * 1000 / 50) * 50 + ' m' : (km < 10 ? num(km) : Math.round(km)) + ' km'; }
-  function pedirPosicion() {
+  function pedirPosicion(precisa) {
     return new Promise(function (ok, mal) {
       if (!navigator.geolocation) return mal({ code: 0 });
       navigator.geolocation.getCurrentPosition(function (p) { ok({ lat: p.coords.latitude, lng: p.coords.longitude }); }, mal,
-        { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 });
+        precisa ? { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 } : { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 });
     });
   }
   var filtroCerca = '';
@@ -955,6 +958,49 @@
     document.getElementById('recolocar').onclick = function () { POS = null; P.cerca(); };
   };
 
+  /* ───────── check-in: «Estoy aquí» ─────────
+     Estando en el local (a 150 m o menos) abre el voto verificado 24 horas. El servidor mide la distancia
+     con la posición y no la guarda. Hasta el 30/11 cuenta cualquier voto; desde el 1/12, solo los verificados. */
+  function checkinVivo(id) { var h = YO.checkins[id]; return !!h && new Date(h) > new Date(); }
+  function hora(iso) { return new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }); }
+  function tarjetaCheckin(l) {
+    if (window.Capacitor) return '';   /* la app 1.0.0 no pide ubicación: llega con la 1.0.1 */
+    var vivo = checkinVivo(l.id), verificado = (votosDe()[l.id] || {}).verificado;
+    var cuantos = l.verificados ? '<span class="font-label-badge text-label-badge text-on-secondary-fixed bg-secondary-fixed/60 px-2 py-0.5 rounded-full flex-shrink-0">' + l.verificados + (l.verificados === 1 ? ' verificado' : ' verificados') + '</span>' : '';
+    var cuerpo = vivo || verificado
+      ? '<p class="font-body-sm text-body-sm text-on-surface">' + (verificado ? 'Tu voto de este sitio está <strong>verificado</strong>: lleva el sello «Estuvo allí».' : 'Check-in hecho. Tu voto saldrá <strong>verificado</strong> si votas antes de las ' + hora(YO.checkins[l.id]) + ' de mañana.') + '</p>' +
+        (verificado ? '' : '<a class="' + BOTON + '" href="#/votar/' + l.id + '">' + ic('how_to_vote', 'text-[20px]') + ' Votar ahora</a>')
+      : '<p class="font-body-sm text-body-sm text-on-surface-variant">¿Estás aquí? Haz check-in y tu voto saldrá con el sello <strong class="text-on-surface">«Estuvo allí»</strong>. Tienes 24 horas para votar: en una discoteca, check-in en la puerta y votas al día siguiente.</p>' +
+        '<button type="button" class="' + BOTON + '" id="checkin">' + ic('where_to_vote', 'text-[20px]') + ' Estoy aquí · check-in</button>' +
+        '<p class="font-label-micro text-label-micro text-on-surface-variant text-center">Usamos tu ubicación solo para ver que estás a menos de 150 m. No la guardamos.</p>';
+    return '<div class="px-gutter pb-space-lg"><div class="rounded-lg bg-surface-container-lowest shadow-md p-space-md flex flex-col gap-space-sm">' +
+      '<div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2">' + ic('verified', 'text-[22px] text-tertiary', true) +
+      '<h3 class="font-headline-md text-headline-md text-on-surface">Voto verificado</h3></div>' + cuantos + '</div>' + cuerpo + '</div></div>';
+  }
+  async function hacerCheckin(l, boton) {
+    if (!usuario() || !YO.perfil) { guardar('vuelta', '#/local/' + l.id); location.hash = '#/entrar'; return; }
+    boton.disabled = true; boton.innerHTML = ic('my_location', 'text-[20px]') + ' Mirando dónde estás…';
+    var pos;
+    try { pos = await pedirPosicion(true); }
+    catch (e) {
+      tostada(e && e.code === 1 ? 'Sin permiso de ubicación no se puede hacer check-in. Puedes darlo en los ajustes.' : 'No hemos podido saber dónde estás. Prueba otra vez.');
+      return P.local(l.id);
+    }
+    var r = await sb.rpc('salimos_checkin', { p_local: l.id, p_lat: pos.lat, p_lng: pos.lng });
+    if (r.error) { tostada(textoError(r.error)); return P.local(l.id); }
+    YO.checkins[l.id] = r.data.hasta;
+    if (YO.votos[l.id]) { YO.votos[l.id].verificado = true; await cargarLocales().catch(function () {}); }
+    tostada(YO.votos[l.id] ? 'Check-in hecho: tu voto ya está verificado.' : 'Check-in hecho. Ya puedes votar con el sello «Estuvo allí».');
+    P.local(l.id);
+  }
+  function avisoVerificado(l, previo) {
+    if (window.Capacitor) return '';
+    if (checkinVivo(l.id) || previo.verificado)
+      return '<div class="flex items-center gap-2 p-space-sm rounded-DEFAULT bg-tertiary-container/30 text-on-surface font-body-sm text-body-sm">' + ic('verified', 'text-[20px] text-tertiary', true) + '<span>Tu voto sale <strong>verificado</strong>: «Estuvo allí».</span></div>';
+    return '<a href="#/local/' + l.id + '" class="flex items-center gap-2 p-space-sm rounded-DEFAULT bg-surface-container-high text-on-surface font-body-sm text-body-sm">' + ic('where_to_vote', 'text-[20px] text-secondary') +
+      '<span>Voto sin verificar. ' + (YO.cuentanTodos === false ? 'En la nota solo cuentan los votos con check-in.' : 'Desde el 1 de diciembre, en la nota solo contarán los votos con check-in.') + ' <strong class="text-primary">Haz check-in desde la ficha</strong></span></a>';
+  }
+
   /* ───────── enrutador ───────── */
   var TAB_ON = 'text-primary font-bold', TAB_OFF = 'text-on-surface-variant hover:text-on-surface';
   function ir() {
@@ -983,6 +1029,6 @@
     ir();
   }
   document.getElementById('destino').onclick = abrirDestinos;
-  sb.auth.onAuthStateChange(function (evento) { if (evento === 'SIGNED_OUT') { YO = { sesion: null, perfil: false, admin: false, votos: {} }; } });
+  sb.auth.onAuthStateChange(function (evento) { if (evento === 'SIGNED_OUT') { YO = { sesion: null, perfil: false, admin: false, votos: {}, checkins: {} }; } });
   arrancar();
 })();
