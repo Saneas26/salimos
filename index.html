@@ -55,10 +55,10 @@
 <body class="bg-surface font-body-md text-on-surface antialiased flex flex-col min-h-screen">
 
 <header class="cabecera fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-gutter flex items-center justify-between gap-space-sm">
-  <a class="flex items-center gap-space-sm min-w-0" href="#/explorar" aria-label="Salimos, volver al inicio">
-    <img alt="" class="h-8 w-8 rounded-DEFAULT object-contain flex-shrink-0" src="img/icono.svg">
-    <div class="flex flex-col min-w-0"><div class="flex items-center gap-space-xs"><span class="font-label-prominent text-label-prominent text-on-surface flex-shrink-0">Salimos</span><span class="px-1.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-micro text-label-micro uppercase tracking-wider min-w-0 truncate">Gran Canaria</span></div><span class="font-label-micro text-label-micro text-on-surface-variant truncate" id="seccion">Explorar</span></div>
-  </a>
+  <div class="flex items-center gap-space-sm min-w-0">
+    <a class="flex-shrink-0" href="#/explorar" aria-label="Salimos, volver al inicio"><img alt="" class="h-8 w-8 rounded-DEFAULT object-contain" src="img/icono.svg"></a>
+    <div class="flex flex-col min-w-0"><div class="flex items-center gap-space-xs"><a class="font-label-prominent text-label-prominent text-on-surface flex-shrink-0" href="#/explorar">Salimos</a><button type="button" id="destino" class="flex items-center px-1.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-micro text-label-micro uppercase tracking-wider min-w-0" aria-label="Cambiar de isla o ciudad" aria-haspopup="dialog"><span class="truncate" id="destino-nombre">Gran Canaria</span></button></div><span class="font-label-micro text-label-micro text-on-surface-variant truncate" id="seccion">Explorar</span></div>
+  </div>
   <div class="flex items-center gap-space-xs flex-shrink-0">
     <button type="button" class="gs-boton" onclick="GrupoSaneas.abrirMenu()" aria-label="Ver las apps del Grupo Saneas"><span class="gs-b-marca">Grupo <b>Saneas</b> &#9656;</span><span class="gs-b-accion">despliega</span></button>
     <a class="w-11 h-11 flex items-center justify-center rounded-full hover:bg-surface-container active:scale-95 transition-all" href="#/tu" aria-label="Tu cuenta"><span class="material-symbols-outlined text-[28px] text-secondary" style="font-variation-settings: 'FILL' 1;">account_circle</span></a>
@@ -105,7 +105,7 @@
   }
 </script>
 <script src="vendor/supabase.js"></script>
-<script src="js/datos.js?v=5"></script>
-<script src="js/app.js?v=9"></script>
+<script src="js/datos.js?v=6"></script>
+<script src="js/app.js?v=10"></script>
 </body>
 </html>

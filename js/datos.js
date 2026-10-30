@@ -1,4 +1,4 @@
-/* Salimos · lo fijo: tipos de sitio, criterios, preguntas rápidas, zonas y tramos de edad.
+/* Salimos · lo fijo: tipos de sitio, criterios, preguntas rápidas, destinos con sus zonas y tramos de edad.
    Cada uno lleva su icono de Material Symbols, el juego de iconos del diseño de Stitch.
    Los locales y los votos vienen de Supabase (apartado «salimos» del proyecto Gajos).
    Si se toca un criterio o una respuesta, hay que tocar también sql/01-salimos.sql. */
@@ -49,19 +49,35 @@
     { id: '35-60', min: 35, max: 60, nombre: 'De 35 a 60' }
   ];
 
-  var ZONAS = [
-    { id: 'lpgc',  nombre: 'Las Palmas de G.C.', municipios: ['Las Palmas de Gran Canaria'] },
-    { id: 'norte', nombre: 'Norte',  municipios: ['Arucas', 'Firgas', 'Moya', 'Santa María de Guía', 'Gáldar', 'Agaete', 'La Aldea de San Nicolás'] },
-    { id: 'centro', nombre: 'Medianías y cumbre', municipios: ['Santa Brígida', 'San Mateo (Vega de San Mateo)', 'Teror', 'Valleseco', 'Tejeda', 'Artenara', 'Valsequillo'] },
-    { id: 'este',  nombre: 'Este',   municipios: ['Telde', 'Ingenio', 'Agüimes', 'Santa Lucía de Tirajana'] },
-    { id: 'sur',   nombre: 'Sur',    municipios: ['San Bartolomé de Tirajana', 'Mogán'] }
+  // Destinos: lo que se elige arriba del todo (isla, provincia o ciudad). Solo se ofrecen los que ya tienen sitios.
+  // Cada destino tiene sus zonas. La zona de un local sale de su municipio; si una zona se queda con
+  // parte de un municipio (Arguineguín dentro de Mogán), manda el barrio.
+  var DESTINOS = [
+    { id: 'Gran Canaria', icono: 'landscape', todo: 'Toda la isla', titulo: 'Zonas de la isla', zonas: [
+      { id: 'lpgc',        nombre: 'Las Palmas de G.C.', lugares: ['Las Palmas de Gran Canaria'], municipios: ['Las Palmas de Gran Canaria'] },
+      { id: 'norte',       nombre: 'Norte',  lugares: ['Arucas', 'Firgas', 'Moya', 'Guía', 'Gáldar', 'Agaete', 'La Aldea'],
+        municipios: ['Arucas', 'Firgas', 'Moya', 'Santa María de Guía', 'Gáldar', 'Agaete', 'La Aldea de San Nicolás'] },
+      { id: 'centro',      nombre: 'Medianías y cumbre', lugares: ['Santa Brígida', 'San Mateo', 'Teror', 'Valleseco', 'Tejeda', 'Artenara', 'Valsequillo'],
+        municipios: ['Santa Brígida', 'San Mateo (Vega de San Mateo)', 'Teror', 'Valleseco', 'Tejeda', 'Artenara', 'Valsequillo'] },
+      { id: 'telde',       nombre: 'Telde', lugares: ['Telde'], municipios: ['Telde'] },
+      { id: 'sureste',     nombre: 'Agüimes, Arinaga e Ingenio', lugares: ['Agüimes', 'Arinaga', 'Ingenio'], municipios: ['Agüimes', 'Ingenio'] },
+      { id: 'vecindario',  nombre: 'Vecindario', lugares: ['Vecindario', 'Santa Lucía de Tirajana'], municipios: ['Santa Lucía de Tirajana'] },
+      { id: 'maspalomas',  nombre: 'Maspalomas', lugares: ['Playa del Inglés', 'San Agustín', 'Meloneras', 'Maspalomas'], municipios: ['San Bartolomé de Tirajana'] },
+      { id: 'arguineguin', nombre: 'Arguineguín', lugares: ['Arguineguín', 'Patalavaca', 'Puerto Rico', 'Amadores'], barrios: /arguinegu|patalavaca|puerto rico|amadores/i },
+      { id: 'mogan',       nombre: 'Mogán', lugares: ['Puerto de Mogán', 'Taurito', 'Mogán pueblo'], municipios: ['Mogán'] }
+    ] }
   ];
+  function destino(id) { return DESTINOS.filter(function (d) { return d.id === id; })[0] || { id: id, icono: 'location_city', todo: 'Todo ' + id, titulo: 'Zonas', zonas: [] }; }
+
+  // Para el formulario de recomendar (hoy solo hay sitios de Gran Canaria).
   var MUNICIPIOS = [];
-  ZONAS.forEach(function (z) { z.municipios.forEach(function (m) { MUNICIPIOS.push(m); }); });
+  DESTINOS[0].zonas.forEach(function (z) { (z.municipios || []).forEach(function (m) { MUNICIPIOS.push(m); }); });
   MUNICIPIOS.sort(function (a, b) { return a.localeCompare(b, 'es'); });
 
-  function zonaDe(municipio) {
-    for (var i = 0; i < ZONAS.length; i++) if (ZONAS[i].municipios.indexOf(municipio) >= 0) return ZONAS[i].id;
+  function zonaDe(l) {
+    var zonas = destino(l.destino).zonas, i;
+    for (i = 0; i < zonas.length; i++) if (zonas[i].barrios && zonas[i].barrios.test(l.barrio || '')) return zonas[i].id;
+    for (i = 0; i < zonas.length; i++) if ((zonas[i].municipios || []).indexOf(l.municipio) >= 0) return zonas[i].id;
     return null;
   }
 
@@ -72,7 +88,8 @@
   }
 
   window.SALIMOS = {
-    TIPOS: TIPOS, EDADES: EDADES, BASE: BASE, EXTRAS: EXTRAS, RAPIDAS: RAPIDAS, ZONAS: ZONAS, MUNICIPIOS: MUNICIPIOS,
+    TIPOS: TIPOS, EDADES: EDADES, BASE: BASE, EXTRAS: EXTRAS, RAPIDAS: RAPIDAS, DESTINOS: DESTINOS, MUNICIPIOS: MUNICIPIOS,
+    destino: destino,
     criteriosDe: criteriosDe, zonaDe: zonaDe,
     MIN_VOTOS_RANKING: 5
   };

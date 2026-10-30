@@ -13,13 +13,30 @@
   var VUELTA = 'https://salimos.saneas.es/';
   var sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-  var LOCALES = [];                                  // de salimos_locales()
+  var TODOS = [];                                    // de salimos_locales(): los de todos los destinos
+  var LOCALES = [];                                  // los del destino elegido arriba
+  var DESTINO = leer('destino', 'Gran Canaria');
   var YO = { sesion: null, perfil: false, admin: false, votos: {} };
 
   async function cargarLocales() {
     var r = await sb.rpc('salimos_locales');
     if (r.error) throw r.error;
-    LOCALES = r.data.map(function (l) { l.zona = S.zonaDe(l.municipio); return l; });
+    TODOS = r.data.map(function (l) { l.zona = S.zonaDe(l); return l; });
+    elegirDestino(DESTINO);
+  }
+  /* Solo se ofrecen los destinos que ya tienen sitios: primero los de datos.js, en su orden. */
+  function destinosConSitios() {
+    var ids = S.DESTINOS.map(function (d) { return d.id; });
+    TODOS.forEach(function (l) { if (ids.indexOf(l.destino) < 0) ids.push(l.destino); });
+    return ids.filter(function (id) { return TODOS.some(function (l) { return l.destino === id; }); });
+  }
+  function elegirDestino(id) {
+    var hay = destinosConSitios();
+    if (hay.indexOf(id) < 0) id = hay[0] || 'Gran Canaria';
+    if (id !== DESTINO) filtro.zona = '';
+    DESTINO = id;
+    LOCALES = TODOS.filter(function (l) { return l.destino === id; });
+    var b = document.getElementById('destino-nombre'); if (b) b.textContent = id;
   }
   async function cargarYo() {
     var s = await sb.auth.getSession();
@@ -41,8 +58,8 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function num(n) { return n.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
   function tipo(id) { return S.TIPOS.filter(function (t) { return t.id === id; })[0]; }
-  function local(id) { return LOCALES.filter(function (l) { return l.id === id; })[0]; }
-  function zona(id) { return S.ZONAS.filter(function (z) { return z.id === id; })[0]; }
+  function local(id) { return TODOS.filter(function (l) { return l.id === id; })[0]; }
+  function zona(id) { return S.destino(DESTINO).zonas.filter(function (z) { return z.id === id; })[0]; }
   function votosDe() { return YO.votos; }
   function usuario() { return YO.sesion ? { correo: YO.sesion.user.email } : null; }
 
@@ -244,6 +261,7 @@
 
   P.explorar = function () {
     seccion('Explorar');
+    var des = S.destino(DESTINO);
     var votosTot = LOCALES.reduce(function (a, l) { return a + l.votos; }, 0);
     var zonaPill = function (id, txt) { return '<button type="button" class="zone-pill whitespace-nowrap px-4 py-2 rounded-full font-label-prominent text-label-prominent transition-all ' + (filtro.zona === id ? PILL_ON : PILL_OFF) + '" data-zona="' + id + '" aria-pressed="' + (filtro.zona === id) + '">' + txt + '</button>'; };
     var catChip = function (id, icono, txt) { return '<button type="button" class="category-chip flex items-center gap-1.5 px-3.5 py-2 rounded-full shadow-sm active:scale-95 transition-all flex-shrink-0 ' + (filtro.tipo === id ? CHIP_ON : CHIP_OFF) + '" data-tipo="' + id + '" aria-pressed="' + (filtro.tipo === id) + '">' + ic(icono, 'text-[18px]') + '<span class="font-label-prominent text-label-prominent whitespace-nowrap">' + txt + '</span></button>'; };
@@ -256,7 +274,7 @@
       '<div class="relative z-10 flex flex-col gap-space-sm"><div class="flex flex-wrap items-center justify-between gap-space-xs">' +
       '<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-lowest/15 backdrop-blur-md"><span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-ping"></span><span class="font-label-badge text-label-badge text-tertiary-fixed uppercase tracking-wider">0% Publicidad • 100% Voto Real</span></div>' +
       '<div class="flex items-center gap-1 text-secondary-fixed font-label-micro text-label-micro">' + ic('verified', 'text-[15px] text-tertiary-fixed', true) + '<span>Grupo Saneas</span></div></div>' +
-      '<div class="mt-1"><h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-secondary tracking-tight">El Ocio de Gran Canaria <span class="text-primary-container">Sin Filtros</span> Ni Pagos</h2>' +
+      '<div class="mt-1"><h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-secondary tracking-tight">El Ocio de ' + esc(DESTINO) + ' <span class="text-primary-container">Sin Filtros</span> Ni Pagos</h2>' +
       '<p class="font-body-md text-body-md text-secondary-fixed mt-1 opacity-90 leading-snug">Lo vota la gente que sale. Sin comisiones, acuerdos ni reseñas patrocinadas.</p></div>' +
       '<div class="grid grid-cols-3 gap-space-xs mt-space-xs pt-space-xs">' +
       '<div class="flex flex-col p-2 rounded-DEFAULT bg-surface-container-lowest/10 backdrop-blur-sm text-center"><span class="font-headline-md text-headline-md text-primary-fixed">' + votosTot.toLocaleString('es-ES') + '</span><span class="font-label-micro text-label-micro text-secondary-fixed">Votos libres</span></div>' +
@@ -266,11 +284,13 @@
       /* Buscador (el de la pantalla Mapa de Stitch) */
       '<label class="flex items-center gap-3 h-14 px-5 rounded-full bg-surface-container-lowest shadow-md">' + ic('search', 'text-[24px] text-secondary') +
       '<span class="sr-only">Buscar un sitio</span><input type="search" id="busca" class="flex-1 min-w-0 bg-transparent font-body-lg text-body-lg text-on-surface placeholder:text-on-surface-variant/70 focus:outline-none" placeholder="Buscar zona, bar o restaurante…" value="' + esc(filtro.texto) + '" autocomplete="off"></label>' +
+      /* Cerca de mí */
+      botonCerca() +
       /* Zonas */
-      '<section class="flex flex-col gap-space-xs"><div class="flex items-center justify-between px-1"><span class="font-label-prominent text-label-prominent text-on-surface">Zonas de la Isla</span>' +
-      '<span class="font-label-micro text-label-micro text-primary flex items-center gap-0.5">' + ic('near_me', 'text-[13px]') + ' Gran Canaria</span></div>' +
+      '<section class="flex flex-col gap-space-xs"><div class="flex items-center justify-between px-1"><span class="font-label-prominent text-label-prominent text-on-surface">' + esc(des.titulo) + '</span>' +
+      '<button type="button" class="font-label-micro text-label-micro text-primary flex items-center gap-0.5" data-destinos>' + ic(des.icono, 'text-[13px]') + ' ' + esc(DESTINO) + ic('expand_more', 'text-[13px]') + '</button></div>' +
       '<div class="flex items-center gap-space-xs overflow-x-auto no-scrollbar py-1 -mx-gutter-mobile px-gutter-mobile sm:mx-0 sm:px-0">' +
-      zonaPill('', 'Toda la Isla') + S.ZONAS.map(function (z) { return zonaPill(z.id, esc(z.nombre)); }).join('') + '</div></section>' +
+      zonaPill('', esc(des.todo)) + des.zonas.map(function (z) { return zonaPill(z.id, esc(z.nombre)); }).join('') + '</div></section>' +
       /* Tipos */
       '<section class="flex items-center gap-space-xs overflow-x-auto no-scrollbar -mx-gutter-mobile px-gutter-mobile sm:mx-0 sm:px-0 py-1">' +
       catChip('', 'apps', 'Todo') + S.TIPOS.map(function (t) { return catChip(t.id, t.icono, t.plural); }).join('') + '</section>' +
@@ -292,6 +312,7 @@
     vista.querySelectorAll('[data-zona]').forEach(function (b) {
       b.onclick = function () { filtro.zona = b.dataset.zona; P.explorar(); };
     });
+    vista.querySelectorAll('[data-destinos]').forEach(function (b) { b.onclick = abrirDestinos; });
     vista.querySelectorAll('[data-tipo]').forEach(function (b) {
       b.onclick = function () { filtro.tipo = b.dataset.tipo; P.explorar(); };
     });
@@ -315,7 +336,7 @@
       if (filtro.tipo && l.tipo !== filtro.tipo && l.tipo2 !== filtro.tipo) return false;
       if (filtro.zona && l.zona !== filtro.zona) return false;
       if (filtro.edades.length && !encajaEdad(mayoria(cifras(l)), filtro.edades)) return false;
-      if (q && sinTildes(l.nombre + ' ' + l.municipio + ' ' + (l.barrio || '') + ' ' + tipo(l.tipo).nombre).indexOf(q) < 0) return false;
+      if (q && sinTildes(l.nombre + ' ' + l.municipio + ' ' + (l.barrio || '') + ' ' + tipo(l.tipo).nombre + ' ' + ((zona(l.zona) || {}).nombre || '')).indexOf(q) < 0) return false;
       return true;
     });
   }
@@ -347,15 +368,17 @@
 
   P.zonas = function () {
     seccion('Zonas');
+    var des = S.destino(DESTINO);
     vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' +
-      cabeceraSeccion('Gran Canaria, de punta a punta', 'Por zonas', 'Los sitios de cada zona: primero los que ya tienen nota.') +
-      S.ZONAS.map(function (z) {
+      cabeceraSeccion(esc(DESTINO) + ', de punta a punta', 'Por zonas', 'Los sitios de cada zona: primero los que ya tienen nota.') +
+      botonCerca() +
+      des.zonas.map(function (z) {
         var enZona = LOCALES.filter(function (l) { return l.zona === z.id; });
         var top = ordenarPorNota(enZona), resto = porVotos(enZona.filter(function (l) { return top.indexOf(l) < 0; }));
         var filas = top.map(function (l, i) { var c = cifras(l); return filaRanking(l, i, c.nota, c.votos); }).join('') + resto.map(filaSitio).join('');
         return '<div class="flex flex-col rounded-lg bg-surface-container-lowest shadow-md p-space-md gap-space-md">' +
           '<div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2 min-w-0"><div class="w-10 h-10 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center flex-shrink-0">' + ic('location_on', 'text-[20px]', true) + '</div>' +
-          '<div class="min-w-0"><h4 class="font-label-prominent text-label-prominent text-on-surface">' + esc(z.nombre) + '</h4><span class="font-label-micro text-label-micro text-on-surface-variant">' + esc(z.municipios.join(' • ')) + '</span></div></div>' +
+          '<div class="min-w-0"><h4 class="font-label-prominent text-label-prominent text-on-surface">' + esc(z.nombre) + '</h4><span class="font-label-micro text-label-micro text-on-surface-variant">' + esc(z.lugares.join(' • ')) + '</span></div></div>' +
           '<span class="px-2 py-0.5 rounded-full bg-secondary-fixed/50 text-on-secondary-fixed font-label-badge text-label-badge flex-shrink-0">' + enZona.length + (enZona.length === 1 ? ' sitio' : ' sitios') + '</span></div>' +
           '<div class="flex flex-col gap-space-xs">' + (filas || '<p class="p-2.5 rounded-DEFAULT bg-surface-container-low font-body-sm text-body-sm text-on-surface-variant">Todavía no hay sitios aquí. <a class="font-bold text-primary" href="#/recomendar">Recomienda uno</a></p>') + '</div></div>';
       }).join('') + '</div>';
@@ -377,7 +400,7 @@
     var l = local(id); if (!l) return P.noExiste();
     seccion('Detalle Local');
     var c = cifras(l), m = mayoria(c);
-    var mapa = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(l.nombre + ', ' + (l.direccion || l.barrio || '') + ', ' + l.municipio + ', Gran Canaria');
+    var mapa = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(l.nombre + ', ' + (l.direccion || l.barrio || '') + ', ' + l.municipio + ', ' + l.destino);
 
     var criterios = S.criteriosDe(l.tipo, l.tipo2).map(function (cr, i) {
       var d = c.crit[cr.id], k = CRIT_COLOR[i % CRIT_COLOR.length];
@@ -442,7 +465,7 @@
       '<p class="font-body-sm text-body-sm text-surface-variant mt-1">' + (c.votos ? c.votos + (c.votos === 1 ? ' voto real' : ' votos reales') : 'Todavía sin votos') + '</p></div></div>' +
       '<div class="mt-space-md pt-space-sm bg-on-secondary-fixed/30 rounded-DEFAULT px-3 py-2 flex items-center justify-between gap-2 relative z-10"><div class="flex items-center gap-2">' + ic('shield_lock', 'text-[18px] text-tertiary-fixed') +
       '<span class="font-label-micro text-label-micro text-surface-container-lowest">' + (c.votos < S.MIN_VOTOS_RANKING ? 'Entra en los rankings con ' + S.MIN_VOTOS_RANKING + ' votos' : 'Una persona, un voto por sitio') + '</span></div>' +
-      '<span class="font-label-badge text-label-badge text-primary-fixed flex-shrink-0">100% GRAN CANARIA</span></div></div></div>' +
+      '<span class="font-label-badge text-label-badge text-primary-fixed flex-shrink-0">100% ' + esc(l.destino.toUpperCase()) + '</span></div></div></div>' +
       (etiquetas ? '<div class="px-gutter pb-space-lg"><div class="flex items-center justify-between mb-space-xs"><h3 class="font-headline-md text-headline-md text-on-surface">Lo que tiene</h3><span class="font-label-micro text-label-micro text-secondary font-semibold">Datos del sitio</span></div>' +
         '<div class="flex flex-wrap gap-space-xs mt-space-xs">' + etiquetas + '</div></div>' : '') +
       '<div class="px-gutter pb-space-lg"><div class="flex items-center justify-between mb-space-xs"><h3 class="font-headline-md text-headline-md text-on-surface">Veredicto de la Comunidad</h3><span class="font-label-micro text-label-micro text-secondary font-semibold">Basado en votos</span></div>' +
@@ -467,7 +490,7 @@
     };
     document.getElementById('btn-share').onclick = function () {
       var url = location.origin + location.pathname + '#/local/' + l.id;
-      if (navigator.share) navigator.share({ title: l.nombre + ' · Salimos', text: l.nombre + ' en Salimos: lo que vota la gente que sale en Gran Canaria.', url: url }).catch(function () {});
+      if (navigator.share) navigator.share({ title: l.nombre + ' · Salimos', text: l.nombre + ' en Salimos: lo que vota la gente que sale en ' + l.destino + '.', url: url }).catch(function () {});
       else if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { tostada('Enlace copiado.'); });
     };
     pintarComentarios(l);
@@ -495,7 +518,7 @@
       return '<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm"><div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2">' +
         '<div class="w-9 h-9 rounded-full ' + (k.mio ? 'bg-primary-fixed text-on-primary-fixed' : 'bg-secondary-fixed text-on-secondary-fixed') + ' flex items-center justify-center">' + ic('person', 'text-[20px]', true) + '</div>' +
         '<div><div class="flex items-center gap-1.5"><span class="font-label-prominent text-label-prominent text-on-surface">' + (k.mio ? 'Tu comentario' : 'Persona con cuenta') + '</span>' + ic('check_circle', 'text-[15px] text-tertiary', true) + '</div>' +
-        '<span class="font-label-micro text-label-micro text-on-surface-variant">Gran Canaria • ' + haceCuanto(k.fecha) + '</span></div></div></div>' +
+        '<span class="font-label-micro text-label-micro text-on-surface-variant">' + esc(l.destino) + ' • ' + haceCuanto(k.fecha) + '</span></div></div></div>' +
         '<p class="font-body-sm text-body-sm text-on-surface">"' + esc(k.texto) + '"</p>' + acciones + '</div>';
     }).join('') : '<p class="font-body-sm text-body-sm text-on-surface-variant">No hay comentarios que mostrar.</p>';
     caja.querySelectorAll('[data-denunciar]').forEach(function (b) {
@@ -839,6 +862,99 @@
     vista.innerHTML = '<div class="px-gutter pt-space-lg"><div class="rounded-lg bg-surface-container-lowest p-space-lg shadow-md text-center font-body-md text-body-md text-on-surface-variant">Este sitio no existe o ya no está.<br><a class="font-label-prominent text-label-prominent text-primary" href="#/explorar">Volver a explorar</a></div></div>';
   };
 
+  /* ───────── destino: isla, provincia o ciudad ───────── */
+  function abrirDestinos() {
+    var hay = destinosConSitios();
+    var caja = document.createElement('div');
+    caja.className = 'fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-md flex items-end sm:items-center justify-center p-gutter';
+    caja.setAttribute('role', 'dialog'); caja.setAttribute('aria-modal', 'true'); caja.setAttribute('aria-labelledby', 'destinos-titulo');
+    caja.innerHTML = '<div class="w-full max-w-sm rounded-lg bg-surface-container-lowest p-space-lg shadow-xl flex flex-col gap-space-md animate-screen-enter">' +
+      '<div class="flex items-center justify-between gap-2"><div class="flex flex-col"><span class="font-label-micro text-label-micro text-tertiary uppercase tracking-wider font-bold">Isla, provincia o ciudad</span>' +
+      '<h3 class="font-headline-md text-headline-md text-on-surface" id="destinos-titulo">¿Dónde sales?</h3></div>' +
+      '<button type="button" class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center" data-cerrar aria-label="Cerrar">' + ic('close', 'text-[20px] text-on-surface') + '</button></div>' +
+      '<div class="flex flex-col gap-space-xs">' + hay.map(function (id) {
+        var d = S.destino(id), n = TODOS.filter(function (l) { return l.destino === id; }).length, on = id === DESTINO;
+        return '<button type="button" class="flex items-center justify-between p-3 rounded-DEFAULT text-left transition-colors ' + (on ? 'bg-secondary-fixed text-on-secondary-fixed' : 'bg-surface-container-low hover:bg-surface-container text-on-surface') + '" data-destino="' + esc(id) + '" aria-pressed="' + on + '">' +
+          '<span class="flex items-center gap-3">' + ic(d.icono, 'text-[22px]') + '<span class="font-label-prominent text-label-prominent">' + esc(id) + '</span></span>' +
+          '<span class="flex items-center gap-1 font-label-badge text-label-badge">' + n + (n === 1 ? ' sitio' : ' sitios') + (on ? ic('check', 'text-[18px]') : '') + '</span></button>';
+      }).join('') + '</div>' + botonCerca() + '</div>';
+    function cerrar() { caja.remove(); document.removeEventListener('keydown', tecla); }
+    function tecla(e) { if (e.key === 'Escape') cerrar(); }
+    caja.onclick = function (e) {
+      if (e.target === caja || e.target.closest('[data-cerrar]')) return cerrar();
+      var b = e.target.closest('[data-destino]');
+      if (b) { elegirDestino(b.dataset.destino); guardar('destino', DESTINO); cerrar(); ir(); return; }
+      if (e.target.closest('[data-cerca]')) cerrar();
+    };
+    document.addEventListener('keydown', tecla);
+    document.body.appendChild(caja);
+    caja.querySelector('[data-cerrar]').focus();
+  }
+
+  /* ───────── cerca de mí ─────────
+     La posición se pide al pulsar, se usa en este móvil para ordenar por distancia y no se envía ni se guarda. */
+  var POS = null;
+  function botonCerca() {
+    /* La app 1.0.0 de las tiendas no pide permiso de ubicación: hasta el próximo binario, solo en la web. */
+    if (window.Capacitor) return '';
+    return '<a href="#/cerca" data-cerca class="flex items-center gap-3 p-space-md rounded-lg bg-gradient-to-br from-secondary via-on-secondary-container to-secondary text-on-secondary shadow-md active:scale-[0.98] transition-transform">' +
+      '<span class="w-11 h-11 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center flex-shrink-0">' + ic('near_me', 'text-[22px]', true) + '</span>' +
+      '<span class="flex flex-col min-w-0 flex-1"><span class="font-label-prominent text-label-prominent">Dónde salir cerca de mí</span>' +
+      '<span class="font-label-micro text-label-micro text-secondary-fixed">Ordenado por distancia. Tu ubicación no sale de tu móvil.</span></span>' + ic('chevron_right', 'text-[22px] text-secondary-fixed') + '</a>';
+  }
+  function kmEntre(a, b, c, d) {
+    var r = Math.PI / 180, x = Math.sin((c - a) * r / 2), y = Math.sin((d - b) * r / 2);
+    return 12742 * Math.asin(Math.sqrt(x * x + Math.cos(a * r) * Math.cos(c * r) * y * y));
+  }
+  function distancia(km) { return km < 1 ? Math.round(km * 1000 / 50) * 50 + ' m' : (km < 10 ? num(km) : Math.round(km)) + ' km'; }
+  function pedirPosicion() {
+    return new Promise(function (ok, mal) {
+      if (!navigator.geolocation) return mal({ code: 0 });
+      navigator.geolocation.getCurrentPosition(function (p) { ok({ lat: p.coords.latitude, lng: p.coords.longitude }); }, mal,
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 });
+    });
+  }
+  var filtroCerca = '';
+  P.cerca = async function () {
+    seccion('Cerca de mí');
+    var cab = cabeceraSeccion('Con tu ubicación, solo en tu móvil', 'Cerca de ti', 'Los sitios más cercanos a donde estás ahora, del más cerca al más lejos.');
+    if (!POS) {
+      vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' + cab +
+        '<p class="p-space-md rounded-lg bg-surface-container-lowest shadow-md font-body-md text-body-md text-on-surface-variant" aria-busy="true">Buscando dónde estás…</p></div>';
+      try { POS = await pedirPosicion(); }
+      catch (e) {
+        if (location.hash !== '#/cerca') return;
+        var txt = e && e.code === 1 ? 'No nos has dado permiso para saber dónde estás. Puedes darlo en los ajustes del navegador o del móvil, o buscar por zona.'
+          : 'No hemos podido saber dónde estás. Mira que tengas la ubicación encendida y vuelve a probar, o busca por zona.';
+        vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' + cab +
+          '<div class="p-space-md rounded-lg bg-surface-container-lowest shadow-md flex flex-col gap-space-sm"><p class="font-body-md text-body-md text-on-surface">' + txt + '</p>' +
+          '<div class="flex flex-wrap gap-space-xs"><button type="button" class="' + BOTON + '" id="otra-vez">' + ic('refresh', 'text-[20px]') + ' Volver a probar</button>' +
+          '<a class="font-label-prominent text-label-prominent text-primary flex items-center gap-0.5 px-2" href="#/zonas">Buscar por zona ' + ic('chevron_right', 'text-[16px]') + '</a></div></div></div>';
+        document.getElementById('otra-vez').onclick = P.cerca;
+        return;
+      }
+      if (location.hash !== '#/cerca') return;
+      /* Si estás en otro destino con sitios, te lo cambiamos. */
+      var masCerca = TODOS.filter(function (l) { return l.lat != null; }).sort(function (a, b) { return kmEntre(POS.lat, POS.lng, a.lat, a.lng) - kmEntre(POS.lat, POS.lng, b.lat, b.lng); })[0];
+      if (masCerca && masCerca.destino !== DESTINO && kmEntre(POS.lat, POS.lng, masCerca.lat, masCerca.lng) < 60) { elegirDestino(masCerca.destino); guardar('destino', DESTINO); }
+    }
+    var lista = TODOS.filter(function (l) { return l.lat != null && (!filtroCerca || l.tipo === filtroCerca || l.tipo2 === filtroCerca); })
+      .map(function (l) { return { l: l, km: kmEntre(POS.lat, POS.lng, l.lat, l.lng) }; })
+      .sort(function (a, b) { return a.km - b.km; }).slice(0, 25);
+    var chip = function (id, icono, txt) { var on = filtroCerca === id; return '<button type="button" class="category-chip flex items-center gap-1.5 px-3.5 py-2 rounded-full shadow-sm active:scale-95 transition-all flex-shrink-0 ' + (on ? CHIP_ON : CHIP_OFF) + '" data-tipo="' + id + '" aria-pressed="' + on + '">' + ic(icono, 'text-[18px]') + '<span class="font-label-prominent text-label-prominent whitespace-nowrap">' + txt + '</span></button>'; };
+    vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' + cab +
+      '<section class="flex items-center gap-space-xs overflow-x-auto no-scrollbar -mx-gutter-mobile px-gutter-mobile sm:mx-0 sm:px-0 py-1">' +
+      chip('', 'apps', 'Todo') + S.TIPOS.map(function (t) { return chip(t.id, t.icono, t.plural); }).join('') + '</section>' +
+      (lista.length && lista[0].km > 60 ? '<p class="p-space-md rounded-lg bg-surface-container-high font-body-sm text-body-sm text-on-surface">Todavía no tenemos sitios cerca de donde estás. Estos son los más cercanos.</p>' : '') +
+      '<div class="flex flex-col gap-space-xs">' + (lista.length ? lista.map(function (x) {
+        return filaSitio(x.l).replace(/<span class="flex items-center gap-1 px-2\.5[^]*?<\/span><\/a>$/,
+          '<span class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-container text-on-primary-container font-label-badge text-label-badge flex-shrink-0 ml-2">' + ic('near_me', 'text-[14px]') + distancia(x.km) + '</span></a>');
+      }).join('') : '<p class="p-2.5 rounded-DEFAULT bg-surface-container-low font-body-sm text-body-sm text-on-surface-variant">No hay sitios de este tipo todavía.</p>') + '</div>' +
+      '<button type="button" class="font-label-prominent text-label-prominent text-primary flex items-center justify-center gap-1" id="recolocar">' + ic('my_location', 'text-[16px]') + ' Me he movido: actualizar</button></div>';
+    vista.querySelectorAll('[data-tipo]').forEach(function (b) { b.onclick = function () { filtroCerca = b.dataset.tipo; P.cerca(); }; });
+    document.getElementById('recolocar').onclick = function () { POS = null; P.cerca(); };
+  };
+
   /* ───────── enrutador ───────── */
   var TAB_ON = 'text-primary font-bold', TAB_OFF = 'text-on-surface-variant hover:text-on-surface';
   function ir() {
@@ -850,7 +966,7 @@
     var sinPestanas = nombre === 'local' || nombre === 'bienvenida';
     document.querySelector('.pestanas').style.display = sinPestanas ? 'none' : '';
     document.getElementById('pie').style.display = nombre === 'bienvenida' ? 'none' : '';
-    var tab = { explorar: 'explorar', local: 'explorar', votar: 'votar', zonas: 'zonas', recomendar: 'recomendar', top: 'top' }[nombre];
+    var tab = { explorar: 'explorar', cerca: 'explorar', local: 'explorar', votar: 'votar', zonas: 'zonas', recomendar: 'recomendar', top: 'top' }[nombre];
     document.querySelectorAll('.pestanas a').forEach(function (a) {
       var on = a.dataset.tab === tab;
       a.className = a.className.replace(on ? TAB_OFF : TAB_ON, on ? TAB_ON : TAB_OFF);
@@ -866,6 +982,7 @@
     catch (e) { vista.innerHTML = '<p class="px-gutter pt-space-lg font-body-md text-body-md text-on-surface-variant">No se ha podido cargar. Mira tu conexión y <a class="font-bold text-primary" href="">vuelve a intentarlo</a>.</p>'; return; }
     ir();
   }
+  document.getElementById('destino').onclick = abrirDestinos;
   sb.auth.onAuthStateChange(function (evento) { if (evento === 'SIGNED_OUT') { YO = { sesion: null, perfil: false, admin: false, votos: {} }; } });
   arrancar();
 })();
