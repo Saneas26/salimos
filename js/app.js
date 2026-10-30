@@ -445,7 +445,7 @@
       '<button type="button" class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-transform active:scale-95 shadow-sm" id="btn-bookmark" aria-label="Guardar" aria-pressed="' + guardado + '">' +
       '<span class="material-symbols-outlined text-[20px]' + (guardado ? ' text-primary-container' : '') + '" id="bookmark-icon"' + (guardado ? ' style="font-variation-settings: \'FILL\' 1;"' : '') + ' aria-hidden="true">' + (guardado ? 'bookmark' : 'bookmark_border') + '</span></button></div></div>' +
       /* Cabecera con el degradado donde irá la foto */
-      '<div class="px-gutter pb-space-md"><div class="relative w-full h-56 rounded-lg overflow-hidden shadow-md group">' + lienzo(l, 'h-full') + '</div>' +
+      '<div class="px-gutter pb-space-md"><div class="relative w-full h-56 rounded-lg overflow-hidden shadow-md group" id="cab-foto">' + lienzo(l, 'h-full') + '</div>' +
       '<div class="absolute inset-0 bg-gradient-to-t from-on-background/80 via-on-background/25 to-transparent"></div>' +
       '<div class="absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-md shadow-sm"><div class="w-2.5 h-2.5 rounded-full bg-tertiary-container animate-ping"></div><span class="font-label-badge text-label-badge text-on-surface">100% Libre • Sin Patrocinio</span></div>' +
       (l.precio ? '<div class="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-secondary text-on-secondary font-label-prominent text-label-prominent flex items-center gap-1">' + euros(l) + '</div>' : '') +
@@ -453,7 +453,7 @@
       '<span class="font-label-badge text-label-badge uppercase tracking-wider text-primary-fixed-dim">' + rotulo(l) + '</span>' +
       '<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-surface-container-lowest leading-tight">' + esc(l.nombre) + '</h2></div>' +
       (m ? '<span class="px-2.5 py-1 rounded-full bg-surface-container-lowest/20 backdrop-blur-md font-label-micro text-label-micro text-surface-container-lowest flex-shrink-0">Gente de ' + m.nombre.replace('De ', '').toLowerCase() + '</span>' : '') +
-      '</div></div></div>' +
+      '</div></div><p class="hidden pt-1.5 font-label-micro text-label-micro text-on-surface-variant text-right" id="credito-google"></p></div>' +
       '<div class="px-gutter pb-space-md"><p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1.5">' + ic('explore', 'text-[18px] text-secondary flex-shrink-0') +
       '<span>' + nombreTipos(l) + ' • ' + esc(l.municipio) + '</span></p></div>' +
       /* Tarjeta azul de la nota */
@@ -488,6 +488,7 @@
     document.getElementById('atras').onclick = function () { if (history.length > 1) history.back(); else location.hash = '#/explorar'; };
     var bc = document.getElementById('checkin'); if (bc) bc.onclick = function () { hacerCheckin(l, bc); };
     pintarFotos(l);
+    fotoGoogle(l);
     document.getElementById('btn-bookmark').onclick = function () {
       var g = guardados(), i = g.indexOf(id), on = i < 0, b = document.getElementById('bookmark-icon');
       if (on) g.push(id); else g.splice(i, 1);
@@ -1011,6 +1012,29 @@
   /* ───────── fotos ─────────
      Las suben quienes han hecho check-in (con la cámara, estando allí) y Óscar las de los locales, con su permiso.
      El móvil la reduce a 1600 px y la vuelve a codificar en JPEG: así no viajan los datos GPS de la foto. */
+  /* Mientras un sitio no tiene foto propia, la cabecera de la ficha enseña una de Google Maps por su servicio oficial.
+     Normas de Google: no se guarda (se pide cada vez; aquí solo vive mientras dura la visita), va con su autor,
+     enlaza a su origen en Google Maps y lleva la marca «Google Maps». */
+  var GOOGLE = {};
+  async function fotoGoogle(l) {
+    if (l.foto || window.Capacitor) return;
+    var g = GOOGLE[l.id];
+    if (!g) {
+      try { g = await (await fetch(SB_URL + '/functions/v1/salimos-foto-google?local=' + encodeURIComponent(l.id))).json(); } catch (e) { return; }
+      GOOGLE[l.id] = g;
+    }
+    var cab = document.getElementById('cab-foto'), cr = document.getElementById('credito-google');
+    if (!g.uri || !cab || !cr || !cab.firstElementChild) return;
+    var img = document.createElement('img');
+    img.src = g.uri; img.alt = ''; img.referrerPolicy = 'no-referrer';
+    img.className = 'absolute inset-0 w-full h-full object-cover';
+    img.onload = function () {
+      cr.innerHTML = 'Foto' + (g.autor ? ' de ' + (g.autorUri ? '<a class="underline" href="' + esc(g.autorUri) + '" target="_blank" rel="noopener">' + esc(g.autor) + '</a>' : esc(g.autor)) : '') +
+        ' · ' + (g.mapsUri ? '<a class="underline font-semibold" href="' + esc(g.mapsUri) + '" target="_blank" rel="noopener">Google Maps</a>' : '<span class="font-semibold">Google Maps</span>');
+      cr.classList.remove('hidden');
+    };
+    cab.firstElementChild.appendChild(img);
+  }
   function puedeSubirFoto(l) { return !window.Capacitor && !!usuario() && YO.perfil && (YO.admin || checkinVivo(l.id)); }
   async function pintarFotos(l) {
     var caja = document.getElementById('fotos'); if (!caja) return;
