@@ -12,6 +12,8 @@
   /* El correo del código distingue Salimos de Trivial por esta dirección de vuelta. */
   var VUELTA = 'https://salimos.saneas.es/';
   var sb = window.supabase.createClient(SB_URL, SB_KEY);
+  var FOTOS = 'salimos-fotos';
+  function urlFoto(ruta) { return SB_URL + '/storage/v1/object/public/' + FOTOS + '/' + ruta; }
 
   var TODOS = [];                                    // de salimos_locales(): los de todos los destinos
   var LOCALES = [];                                  // los del destino elegido arriba
@@ -122,6 +124,7 @@
 
   /* El hueco de la foto: hasta que haya fotos propias, el degradado del banner de Stitch con el icono del tipo. */
   function lienzo(l, alto) {
+    if (l.foto) return '<div class="relative w-full ' + alto + ' bg-secondary overflow-hidden"><img src="' + esc(urlFoto(l.foto)) + '" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover">';
     return '<div class="relative w-full ' + alto + ' bg-gradient-to-br from-secondary via-on-secondary-container to-secondary overflow-hidden">' +
       '<div class="absolute -right-8 -top-8 w-44 h-44 rounded-full bg-primary-container/20 blur-2xl pointer-events-none"></div>' +
       '<div class="absolute -left-10 -bottom-10 w-36 h-36 rounded-full bg-tertiary-fixed/15 blur-xl pointer-events-none"></div>' +
@@ -467,6 +470,7 @@
       '<span class="font-label-micro text-label-micro text-surface-container-lowest">' + (c.votos < S.MIN_VOTOS_RANKING ? 'Entra en los rankings con ' + S.MIN_VOTOS_RANKING + ' votos' : 'Una persona, un voto por sitio') + '</span></div>' +
       '<span class="font-label-badge text-label-badge text-primary-fixed flex-shrink-0">100% ' + esc(l.destino.toUpperCase()) + '</span></div></div></div>' +
       tarjetaCheckin(l) +
+      '<div class="px-gutter pb-space-lg" id="fotos"></div>' +
       (etiquetas ? '<div class="px-gutter pb-space-lg"><div class="flex items-center justify-between mb-space-xs"><h3 class="font-headline-md text-headline-md text-on-surface">Lo que tiene</h3><span class="font-label-micro text-label-micro text-secondary font-semibold">Datos del sitio</span></div>' +
         '<div class="flex flex-wrap gap-space-xs mt-space-xs">' + etiquetas + '</div></div>' : '') +
       '<div class="px-gutter pb-space-lg"><div class="flex items-center justify-between mb-space-xs"><h3 class="font-headline-md text-headline-md text-on-surface">Veredicto de la Comunidad</h3><span class="font-label-micro text-label-micro text-secondary font-semibold">Basado en votos</span></div>' +
@@ -483,6 +487,7 @@
 
     document.getElementById('atras').onclick = function () { if (history.length > 1) history.back(); else location.hash = '#/explorar'; };
     var bc = document.getElementById('checkin'); if (bc) bc.onclick = function () { hacerCheckin(l, bc); };
+    pintarFotos(l);
     document.getElementById('btn-bookmark').onclick = function () {
       var g = guardados(), i = g.indexOf(id), on = i < 0, b = document.getElementById('bookmark-icon');
       if (on) g.push(id); else g.splice(i, 1);
@@ -833,6 +838,7 @@
     document.getElementById('salir').onclick = async function () { await sb.auth.signOut(); await cargarYo(); tostada('Sesión cerrada.'); P.tu(); };
     document.getElementById('borrarCuenta').onclick = async function () {
       if (!confirm('¿Borrar tu cuenta y todos tus votos y comentarios? No se puede deshacer.')) return;
+      await borrarMisFotos();
       var r = await sb.rpc('salimos_borrar_mis_datos');
       if (r.error) { tostada(textoError(r.error)); return; }
       try { await sb.auth.signOut({ scope: 'local' }); } catch (x) { /* la cuenta ya no está */ }
@@ -847,6 +853,7 @@
       ['how_to_reg', 'bg-tertiary-fixed text-on-tertiary-fixed', 'Quién vota', 'Personas con cuenta. Se entra con el correo y un código, sin contraseña. Cada persona tiene un voto por sitio, que puede cambiar cuando quiera.'],
       ['checklist_rtl', 'bg-primary-fixed text-on-primary-fixed', 'Cómo sale la nota', 'Cada sitio se vota por partes: limpieza, ambiente, servicio, consumiciones, precio, ubicación, parking y guagua, y además lo propio de cada tipo de sitio (la carta, los vinos, la música o las vistas). La nota general es la media de esas partes. Un sitio no entra en los rankings hasta tener ' + S.MIN_VOTOS_RANKING + ' votos.'],
       ['verified', 'bg-tertiary-container text-on-tertiary-container', 'Voto verificado: «Estuvo allí»', 'Si estás en el local, pulsa «Estoy aquí» en su ficha: comprobamos que estás a menos de 150 m y tu voto sale con el sello «Estuvo allí». Tienes 24 horas para votar, así en una discoteca haces check-in en la puerta y votas al día siguiente. Hasta el 30 de noviembre de 2026 cuentan todos los votos; desde el 1 de diciembre, en la nota y en los rankings solo cuentan los verificados.'],
+      ['photo_camera', 'bg-primary-fixed text-on-primary-fixed', 'Fotos', 'Las fotos son de quien ha estado allí (con check-in, hechas con su móvil en el momento) o las cede el propio local. Nunca copiamos fotos de otras webs. Sin personas que se reconozcan: cualquiera puede denunciar una foto y con tres denuncias se retira.'],
       ['money_off', 'bg-error-container text-on-error-container', 'Quién paga', 'Nadie. Ningún local, marca ni anunciante puede pagar por salir, subir o quitar una nota. Salimos es del Grupo Saneas y es gratis.'],
       ['fingerprint', 'bg-secondary-fixed text-on-secondary-fixed', 'Votos falsos', 'Una cuenta solo puede votar una vez cada sitio, y hay un tope de sitios nuevos al día. Vigilamos los votos raros —muchas cuentas nuevas votando el mismo sitio de golpe— y los que sean de mentira no cuentan.'],
       ['forum', 'bg-surface-container-highest text-on-surface', 'Comentarios', 'Se publican al momento. Quitamos los que insultan, señalan a trabajadores con nombre o no tienen que ver con el sitio. Cualquiera puede denunciar un comentario y lo revisamos en menos de 24 horas; con tres denuncias se retira solo hasta que lo miremos. Y si alguien te molesta, puedes bloquearlo y no volverás a ver lo que escribe.']
@@ -999,6 +1006,102 @@
       return '<div class="flex items-center gap-2 p-space-sm rounded-DEFAULT bg-tertiary-container/30 text-on-surface font-body-sm text-body-sm">' + ic('verified', 'text-[20px] text-tertiary', true) + '<span>Tu voto sale <strong>verificado</strong>: «Estuvo allí».</span></div>';
     return '<a href="#/local/' + l.id + '" class="flex items-center gap-2 p-space-sm rounded-DEFAULT bg-surface-container-high text-on-surface font-body-sm text-body-sm">' + ic('where_to_vote', 'text-[20px] text-secondary') +
       '<span>Voto sin verificar. ' + (YO.cuentanTodos === false ? 'En la nota solo cuentan los votos con check-in.' : 'Desde el 1 de diciembre, en la nota solo contarán los votos con check-in.') + ' <strong class="text-primary">Haz check-in desde la ficha</strong></span></a>';
+  }
+
+  /* ───────── fotos ─────────
+     Las suben quienes han hecho check-in (con la cámara, estando allí) y Óscar las de los locales, con su permiso.
+     El móvil la reduce a 1600 px y la vuelve a codificar en JPEG: así no viajan los datos GPS de la foto. */
+  function puedeSubirFoto(l) { return !window.Capacitor && !!usuario() && YO.perfil && (YO.admin || checkinVivo(l.id)); }
+  async function pintarFotos(l) {
+    var caja = document.getElementById('fotos'); if (!caja) return;
+    var r = await sb.rpc('salimos_fotos', { p_local: l.id });
+    var fotos = r.error ? [] : r.data;
+    var sube = puedeSubirFoto(l);
+    if (!fotos.length && !sube) { caja.innerHTML = ''; return; }
+    caja.innerHTML = '<div class="flex items-center justify-between mb-space-xs"><h3 class="font-headline-md text-headline-md text-on-surface">Fotos</h3>' +
+      '<span class="font-label-micro text-label-micro text-secondary font-semibold">' + (fotos.length ? 'De quien estuvo allí y del local' : 'Todavía ninguna') + '</span></div>' +
+      (fotos.length ? '<div class="grid grid-cols-3 gap-1.5 rounded-lg overflow-hidden">' + fotos.map(function (f, i) {
+        return '<button type="button" class="relative aspect-square bg-surface-container overflow-hidden" data-foto="' + i + '" aria-label="Ver foto ' + (i + 1) + '"><img src="' + esc(urlFoto(f.ruta)) + '" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover"></button>';
+      }).join('') + '</div>' : '') +
+      (sube ? '<div class="flex flex-col gap-space-xs mt-space-sm">' +
+        (YO.admin ? '<input class="' + INPUT + '" id="credito" maxlength="80" value="Cedida por el local" aria-label="De quién es la foto">' : '') +
+        '<label class="' + BOTON + ' cursor-pointer" for="subir-foto">' + ic('add_a_photo', 'text-[20px]') + (YO.admin ? ' Subir foto del local' : ' Añadir una foto tuya') + '</label>' +
+        '<input type="file" id="subir-foto" class="sr-only" accept="image/*"' + (YO.admin ? '' : ' capture="environment"') + '>' +
+        '<p class="font-label-micro text-label-micro text-on-surface-variant text-center">' + (YO.admin ? 'Solo fotos con permiso del local.' : 'Hecha por ti, aquí y ahora. Sin personas que se reconozcan.') + '</p></div>' : '');
+    caja.querySelectorAll('[data-foto]').forEach(function (b) { b.onclick = function () { verFoto(l, fotos[+b.dataset.foto]); }; });
+    var inp = document.getElementById('subir-foto');
+    if (inp) inp.onchange = function () { if (inp.files[0]) subirFoto(l, inp.files[0]); };
+  }
+  function reducir(file) {
+    return new Promise(function (ok, mal) {
+      var img = new Image(), u = URL.createObjectURL(file);
+      img.onload = function () {
+        var k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+        var c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(u);
+        c.toBlob(function (b) { b ? ok(b) : mal(); }, 'image/jpeg', 0.82);
+      };
+      img.onerror = function () { URL.revokeObjectURL(u); mal(); };
+      img.src = u;
+    });
+  }
+  async function subirFoto(l, file) {
+    var caja = document.getElementById('fotos');
+    var lbl = caja.querySelector('label[for="subir-foto"]'); if (lbl) lbl.innerHTML = ic('hourglass_top', 'text-[20px]') + ' Subiendo…';
+    var blob;
+    try { blob = await reducir(file); } catch (e) { tostada('No hemos podido leer esa foto. Prueba con otra.'); return pintarFotos(l); }
+    var ruta = YO.sesion.user.id + '/' + l.id + '/' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) + '.jpg';
+    var up = await sb.storage.from(FOTOS).upload(ruta, blob, { contentType: 'image/jpeg', upsert: false });
+    if (up.error) { tostada('No se ha podido subir. ' + (checkinVivo(l.id) || YO.admin ? 'Prueba otra vez.' : 'Haz check-in primero.')); return pintarFotos(l); }
+    var cr = document.getElementById('credito');
+    var r = await sb.rpc('salimos_foto_registrar', { p_local: l.id, p_ruta: ruta, p_credito: cr ? cr.value : null });
+    if (r.error) { await sb.storage.from(FOTOS).remove([ruta]); tostada(textoError(r.error)); return pintarFotos(l); }
+    tostada('Foto subida. Gracias.');
+    await cargarLocales().catch(function () {});
+    pintarFotos(l);
+  }
+  function huella() { var h = leer('huella', ''); if (!h) { h = Date.now().toString(36) + Math.random().toString(36).slice(2, 12); guardar('huella', h); } return h; }
+  function verFoto(l, f) {
+    var caja = document.createElement('div');
+    caja.className = 'fixed inset-0 z-50 bg-inverse-surface/90 backdrop-blur-md flex flex-col items-center justify-center p-gutter gap-space-sm';
+    caja.setAttribute('role', 'dialog'); caja.setAttribute('aria-modal', 'true'); caja.setAttribute('aria-label', 'Foto de ' + l.nombre);
+    var quitar = f.mia || YO.admin;
+    caja.innerHTML = '<img src="' + esc(urlFoto(f.ruta)) + '" alt="Foto de ' + esc(l.nombre) + '" class="max-w-full max-h-[70vh] rounded-lg shadow-xl object-contain">' +
+      '<p class="font-label-micro text-label-micro text-surface-container-lowest">' + (f.origen === 'local' ? esc(f.credito || 'Cedida por el local') : 'De alguien que estuvo allí') + ' • ' + haceCuanto(f.fecha) + '</p>' +
+      '<div class="flex flex-wrap items-center justify-center gap-space-xs">' +
+      (quitar ? '<button type="button" class="flex items-center gap-1 px-3 py-2 rounded-full bg-surface-container-lowest text-on-surface font-label-prominent text-label-prominent" data-quitar>' + ic('delete', 'text-[18px]') + ' Quitar</button>'
+              : '<button type="button" class="flex items-center gap-1 px-3 py-2 rounded-full bg-surface-container-lowest text-on-surface font-label-prominent text-label-prominent" data-denunciar>' + ic('flag', 'text-[18px]') + ' Denunciar</button>') +
+      '<button type="button" class="flex items-center gap-1 px-3 py-2 rounded-full bg-primary-container text-on-primary-container font-label-prominent text-label-prominent" data-cerrar>' + ic('close', 'text-[18px]') + ' Cerrar</button></div>';
+    function cerrar() { caja.remove(); document.removeEventListener('keydown', tecla); }
+    function tecla(e) { if (e.key === 'Escape') cerrar(); }
+    caja.onclick = async function (e) {
+      if (e.target === caja || e.target.closest('[data-cerrar]')) return cerrar();
+      if (e.target.closest('[data-denunciar]')) {
+        if (!confirm('¿Denunciar esta foto? La revisamos en menos de 24 horas.')) return;
+        var d = await sb.rpc('salimos_denunciar_foto', { p_foto: f.id, p_quien: huella(), p_motivo: null });
+        tostada(d.error ? textoError(d.error) : 'Gracias. La revisamos en menos de 24 horas.'); cerrar(); return pintarFotos(l);
+      }
+      if (e.target.closest('[data-quitar]')) {
+        if (!confirm('¿Quitar esta foto?')) return;
+        var q = await sb.rpc('salimos_retirar_foto', { p_foto: f.id });
+        if (q.error) return tostada(textoError(q.error));
+        if (f.mia) await sb.storage.from(FOTOS).remove([f.ruta]);
+        tostada('Foto quitada.'); cerrar(); await cargarLocales().catch(function () {}); return pintarFotos(l);
+      }
+    };
+    document.addEventListener('keydown', tecla);
+    document.body.appendChild(caja);
+    caja.querySelector('[data-cerrar]').focus();
+  }
+  /* Al borrar la cuenta, sus fotos se van del almacén (las filas se borran solas con el perfil). */
+  async function borrarMisFotos() {
+    try {
+      var uid = YO.sesion.user.id, carpetas = await sb.storage.from(FOTOS).list(uid, { limit: 1000 });
+      for (var i = 0; carpetas.data && i < carpetas.data.length; i++) {
+        var d = uid + '/' + carpetas.data[i].name, fs = await sb.storage.from(FOTOS).list(d, { limit: 1000 });
+        if (fs.data && fs.data.length) await sb.storage.from(FOTOS).remove(fs.data.map(function (f) { return d + '/' + f.name; }));
+      }
+    } catch (e) {}
   }
 
   /* ───────── enrutador ───────── */
