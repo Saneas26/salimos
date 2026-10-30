@@ -429,7 +429,10 @@
     var dato = function (icono, html) { return '<div class="flex items-start gap-2 bg-surface-container-lowest p-2.5 rounded-DEFAULT">' + ic(icono, 'text-[18px] text-secondary flex-shrink-0') + '<span class="font-body-md text-body-md text-on-surface min-w-0 break-words">' + html + '</span></div>'; };
     var datos = [
       l.direccion ? dato('location_on', esc(l.direccion)) : '',
-      l.telefono ? dato('call', '<a class="font-bold text-secondary" href="tel:+34' + l.telefono.replace(/\D/g, '') + '">' + esc(l.telefono) + '</a>') : '',
+      /* Para reservar: uno o varios teléfonos separados por «/» (fijo / móvil). */
+      l.telefono ? dato('call', l.telefono.split('/').map(function (t) {
+        t = t.trim(); return '<a class="font-bold text-secondary" href="tel:+34' + t.replace(/\D/g, '').replace(/^34(?=\d{9}$)/, '') + '">' + esc(t) + '</a>';
+      }).join(' · ')) : '',
       l.web ? dato('language', '<a class="font-bold text-secondary" href="' + esc(l.web) + '" target="_blank" rel="noopener">' + esc(l.web.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')) + '</a>') : '',
       l.precios ? dato('euro', esc(l.precios)) : '',
       l.consejo ? dato('lightbulb', esc(l.consejo)) : ''
