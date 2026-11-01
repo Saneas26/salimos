@@ -148,11 +148,13 @@ jobs:
           [ "$ENC" = "false" ] || { echo "ERROR: ITSAppUsesNonExemptEncryption debe ser false"; exit 1; }
           echo "$ORI" | grep -q "UIInterfaceOrientationPortrait" || { echo "ERROR: falta la orientación Portrait"; exit 1; }
           echo "$ORI" | grep -q "Landscape" && { echo "ERROR: la app no debe permitir Landscape en iPhone"; exit 1; }
-          # Salimos no pide NI UN permiso: ni cámara, ni fotos, ni ubicación, ni avisos.
-          # Si algún día aparece una clave de permiso en el Info.plist, el build para.
-          if plutil -p "$PL" | grep -E 'NS[A-Za-z]*UsageDescription'; then
-            echo "ERROR: el Info.plist pide permisos y esta app no necesita ninguno"; exit 1
-          fi
+          # Desde la 1.0.1 Salimos pide SOLO ubicación (cerca de mí, check-in), cámara y fotos (fotos de los sitios).
+          # Si aparece cualquier otra clave de permiso en el Info.plist, el build para.
+          OTROS=$(plutil -p "$PL" | grep -oE 'NS[A-Za-z]*UsageDescription' | grep -vE '^NS(LocationWhenInUse|Camera|PhotoLibrary)UsageDescription$' || true)
+          [ -z "$OTROS" ] || { echo "ERROR: el Info.plist pide permisos que Salimos no usa: $OTROS"; exit 1; }
+          for K in NSLocationWhenInUseUsageDescription NSCameraUsageDescription NSPhotoLibraryUsageDescription; do
+            plutil -p "$PL" | grep -q "\"$K\"" || { echo "ERROR: falta $K en el Info.plist"; exit 1; }
+          done
           # La web de Salimos va dentro del binario.
           test -f "$APP/public/index.html" || { echo "ERROR: falta App.app/public/index.html"; exit 1; }
           test -f "$APP/capacitor.config.json" || { echo "ERROR: falta capacitor.config.json en el bundle"; exit 1; }
