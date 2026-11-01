@@ -150,20 +150,20 @@
   /* Fila de ranking: número grande, nombre y nota con estrella. */
   var COLOR_PUESTO = ['text-primary', 'text-secondary', 'text-on-surface-variant'];
   function filaRanking(l, i, valor, n, colorNota) {
-    return '<a href="#/local/' + l.id + '" class="flex items-center justify-between p-2.5 rounded-DEFAULT bg-surface-container-low hover:bg-surface-container transition-colors">' +
+    return '<a href="#/local/' + l.id + '" class="flex items-center justify-between p-3 rounded-DEFAULT bg-surface-container-low hover:bg-surface-container transition-colors">' +
       '<div class="flex items-center gap-3 min-w-0"><span class="font-score-display text-score-display ' + (COLOR_PUESTO[i] || 'text-on-surface-variant') + ' flex-shrink-0 w-6 text-center">' + (i + 1) + '</span>' +
-      '<div class="flex flex-col min-w-0"><span class="font-label-prominent text-label-prominent text-on-surface truncate">' + esc(l.nombre) + '</span>' +
-      '<span class="font-label-micro text-label-micro text-on-surface-variant truncate">' + nombreTipos(l) + ' • ' + rotulo(l) + '</span></div></div>' +
+      '<div class="flex flex-col min-w-0 gap-0.5"><span class="font-label-prominent text-[17px] leading-[22px] font-bold text-on-surface truncate">' + esc(l.nombre) + '</span>' +
+      '<span class="font-body-md text-[14px] leading-[18px] text-on-surface-variant truncate">' + nombreTipos(l) + ' • ' + rotulo(l) + '</span></div></div>' +
       '<div class="flex flex-col items-end flex-shrink-0 pl-2"><div class="flex items-center gap-1 ' + (colorNota || 'text-tertiary') + '"><span class="font-headline-md text-headline-md leading-none">' + n1(valor) + '</span>' + ic('star', 'text-[16px]', true) + '</div>' +
       '<span class="font-label-micro text-label-micro text-on-surface-variant">' + n + (n === 1 ? ' voto' : ' votos') + '</span></div></a>';
   }
   /* Fila de un sitio que aún no puntúa: el icono de su tipo donde iría el puesto. */
   function filaSitio(l) {
     var c = cifras(l);
-    return '<a href="#/local/' + l.id + '" class="flex items-center justify-between p-2.5 rounded-DEFAULT bg-surface-container-low hover:bg-surface-container transition-colors">' +
+    return '<a href="#/local/' + l.id + '" class="flex items-center justify-between p-3 rounded-DEFAULT bg-surface-container-low hover:bg-surface-container transition-colors">' +
       '<div class="flex items-center gap-3 min-w-0"><span class="w-6 flex justify-center flex-shrink-0">' + ic(tipo(l.tipo).icono, 'text-[22px] text-secondary') + '</span>' +
-      '<div class="flex flex-col min-w-0"><span class="font-label-prominent text-label-prominent text-on-surface truncate">' + esc(l.nombre) + '</span>' +
-      '<span class="font-label-micro text-label-micro text-on-surface-variant truncate">' + nombreTipos(l) + ' • ' + rotulo(l) + '</span></div></div>' +
+      '<div class="flex flex-col min-w-0 gap-0.5"><span class="font-label-prominent text-[17px] leading-[22px] font-bold text-on-surface truncate">' + esc(l.nombre) + '</span>' +
+      '<span class="font-body-md text-[14px] leading-[18px] text-on-surface-variant truncate">' + nombreTipos(l) + ' • ' + rotulo(l) + '</span></div></div>' +
       '<span class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-fixed/50 text-on-secondary-fixed font-label-badge text-label-badge flex-shrink-0 ml-2">' +
       (c.votos ? c.votos + (c.votos === 1 ? ' voto' : ' votos') : 'Sin votos') + '</span></a>';
   }
@@ -238,7 +238,7 @@
           (p[5] ? '<div class="flex flex-wrap gap-1 mt-space-xs">' + p[5].map(function (x) { return '<span class="font-label-badge text-label-badge bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded-md">' + x + '</span>'; }).join('') + '</div>' : '') + '</div>';
       }).join('') + '</section>' +
       '<div class="flex flex-col gap-space-sm pt-space-xs sticky bottom-0 bg-gradient-to-t from-surface via-surface to-transparent pb-space-sm">' +
-      '<button type="button" class="w-full h-14 bg-primary-container text-on-primary-container font-label-prominent text-label-prominent rounded-full flex items-center justify-center gap-space-sm shadow-lg hover:brightness-105 active:scale-95 transition-all" id="empezar">' + ic('how_to_reg', 'text-headline-md', true) + '<span>Entrar en Salimos</span></button>' +
+      '<button type="button" class="w-full h-16 bg-primary-container text-on-primary-container font-label-prominent text-[22px] leading-[28px] font-extrabold rounded-full flex items-center justify-center gap-space-sm shadow-lg hover:brightness-105 active:scale-95 transition-all" id="empezar">' + ic('how_to_reg', 'text-[28px]', true) + '<span>Entrar en Salimos</span></button>' +
       '<a class="w-full py-space-sm text-center font-label-prominent text-label-prominent text-secondary hover:text-primary transition-colors" href="#/como-funciona">Cómo funciona</a></div></div>';
 
     /* El pilar que queda en el centro de la pantalla se enciende, como en Stitch. */
@@ -252,7 +252,7 @@
     }
     document.getElementById('empezar').onclick = function () {
       var b = this; guardar('visto', 1);
-      b.innerHTML = ic('sync', 'text-headline-md animate-spin') + '<span>Entrando…</span>';
+      b.innerHTML = ic('sync', 'text-[28px] animate-spin') + '<span>Entrando…</span>';
       document.getElementById('manifiesto').classList.add('page-exit');
       setTimeout(function () { location.hash = '#/explorar'; }, 450);
     };
@@ -265,7 +265,6 @@
   P.explorar = function () {
     seccion('Explorar');
     var des = S.destino(DESTINO);
-    var votosTot = LOCALES.reduce(function (a, l) { return a + l.votos; }, 0);
     var zonaPill = function (id, txt) { return '<button type="button" class="zone-pill whitespace-nowrap px-4 py-2 rounded-full font-label-prominent text-label-prominent transition-all ' + (filtro.zona === id ? PILL_ON : PILL_OFF) + '" data-zona="' + id + '" aria-pressed="' + (filtro.zona === id) + '">' + txt + '</button>'; };
     var catChip = function (id, icono, txt) { return '<button type="button" class="category-chip flex items-center gap-1.5 px-3.5 py-2 rounded-full shadow-sm active:scale-95 transition-all flex-shrink-0 ' + (filtro.tipo === id ? CHIP_ON : CHIP_OFF) + '" data-tipo="' + id + '" aria-pressed="' + (filtro.tipo === id) + '">' + ic(icono, 'text-[18px]') + '<span class="font-label-prominent text-label-prominent whitespace-nowrap">' + txt + '</span></button>'; };
     var edadPill = function (e) { var on = filtro.edades.indexOf(e.id) >= 0; return '<button type="button" class="zone-pill whitespace-nowrap px-4 py-2 rounded-full font-label-prominent text-label-prominent transition-all ' + (on ? PILL_ON : PILL_OFF) + '" data-edad="' + e.id + '" aria-pressed="' + on + '">' + e.nombre + ' años</button>'; };
@@ -274,16 +273,7 @@
       /* Banner de Stitch */
       '<section class="relative overflow-hidden rounded-lg bg-gradient-to-br from-secondary via-on-secondary-container to-secondary p-space-lg shadow-xl text-on-secondary">' +
       '<div class="absolute -right-8 -top-8 w-44 h-44 rounded-full bg-primary-container/20 blur-2xl pointer-events-none"></div><div class="absolute -left-10 -bottom-10 w-36 h-36 rounded-full bg-tertiary-fixed/15 blur-xl pointer-events-none"></div>' +
-      '<div class="relative z-10 flex flex-col gap-space-sm"><div class="flex flex-wrap items-center justify-between gap-space-xs">' +
-      '<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-lowest/15 backdrop-blur-md"><span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-ping"></span><span class="font-label-badge text-label-badge text-tertiary-fixed uppercase tracking-wider">0% Publicidad • 100% Voto Real</span></div>' +
-      '<div class="flex items-center gap-1 text-secondary-fixed font-label-micro text-label-micro">' + ic('verified', 'text-[15px] text-tertiary-fixed', true) + '<span>Grupo Saneas</span></div></div>' +
-      '<div class="mt-1"><h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-secondary tracking-tight">El Ocio de ' + esc(DESTINO) + ' <span class="text-primary-container">Sin Filtros</span> Ni Pagos</h2>' +
-      '<p class="font-body-md text-body-md text-secondary-fixed mt-1 opacity-90 leading-snug">Lo vota la gente que sale. Sin comisiones, acuerdos ni reseñas patrocinadas.</p></div>' +
-      '<div class="grid grid-cols-3 gap-space-xs mt-space-xs pt-space-xs">' +
-      '<div class="flex flex-col p-2 rounded-DEFAULT bg-surface-container-lowest/10 backdrop-blur-sm text-center"><span class="font-headline-md text-headline-md text-primary-fixed">' + votosTot.toLocaleString('es-ES') + '</span><span class="font-label-micro text-label-micro text-secondary-fixed">Votos libres</span></div>' +
-      '<div class="flex flex-col p-2 rounded-DEFAULT bg-surface-container-lowest/10 backdrop-blur-sm text-center"><span class="font-headline-md text-headline-md text-tertiary-fixed">' + LOCALES.length + '</span><span class="font-label-micro text-label-micro text-secondary-fixed">Sitios</span></div>' +
-      '<div class="flex flex-col p-2 rounded-DEFAULT bg-surface-container-lowest/10 backdrop-blur-sm text-center"><span class="font-headline-md text-headline-md text-surface-container-lowest">0€</span><span class="font-label-micro text-label-micro text-secondary-fixed">Pagos de locales</span></div>' +
-      '</div></div></section>' +
+      '<h2 class="relative z-10 py-space-md font-display-hero text-[44px] leading-[50px] font-extrabold tracking-tight text-on-secondary">¿Aquí dónde <span class="text-primary-container">se sale?</span></h2></section>' +
       /* Buscador (el de la pantalla Mapa de Stitch) */
       '<label class="flex items-center gap-3 h-14 px-5 rounded-full bg-surface-container-lowest shadow-md">' + ic('search', 'text-[24px] text-secondary') +
       '<span class="sr-only">Buscar un sitio</span><input type="search" id="busca" class="flex-1 min-w-0 bg-transparent font-body-lg text-body-lg text-on-surface placeholder:text-on-surface-variant/70 focus:outline-none" placeholder="Buscar zona, bar o restaurante…" value="' + esc(filtro.texto) + '" autocomplete="off"></label>' +
@@ -330,6 +320,7 @@
     });
     document.getElementById('busca').oninput = function (e) { filtro.texto = e.target.value; pintarResultados(); };
     pintarResultados();
+    ubicar();
   };
 
   function sinTildes(s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
@@ -345,8 +336,10 @@
   }
   function pintarResultados() {
     var base = filtrados();
-    document.getElementById('cuantos').textContent = base.length + (base.length === 1 ? ' sitio' : ' sitios');
-    document.getElementById('carrusel').innerHTML = base.length ? porVotos(base).map(tarjetaCarrusel).join('')
+    /* Lo más votado: como mucho 10 tarjetas en el carrusel. */
+    var top = porVotos(base).slice(0, 10);
+    document.getElementById('cuantos').textContent = base.length > 10 ? 'Top 10' : base.length + (base.length === 1 ? ' sitio' : ' sitios');
+    document.getElementById('carrusel').innerHTML = top.length ? top.map(tarjetaCarrusel).join('')
       : '<div class="w-full rounded-lg bg-surface-container-lowest shadow-md p-space-lg text-center font-body-md text-body-md text-on-surface-variant">No hay ningún sitio con estos filtros todavía.<br><a class="font-label-prominent text-label-prominent text-primary" href="#/recomendar">¿Conoces uno? Recomiéndalo</a></div>';
     var con = function (cid) { return base.filter(function (l) { return S.criteriosDe(l.tipo, l.tipo2).some(function (c) { return c.id === cid; }); }); };
     document.getElementById('rankings').innerHTML =
@@ -913,14 +906,51 @@
   /* ───────── cerca de mí ─────────
      La posición se pide al pulsar, se usa en este móvil para ordenar por distancia y no se envía ni se guarda. */
   var POS = null;
-  function botonCerca() {
-    /* La app 1.0.0 de las tiendas no pide permiso de ubicación: hasta el próximo binario, solo en la web. */
-    if (window.Capacitor) return '';
+  /* Ubicación: se pide al abrir la app y cada vez que se vuelve a ella, para enseñar lo que hay cerca.
+     Si se negó, se vuelve a preguntar la próxima vez; si el móvil ya no deja preguntar, se explica dónde activarla. */
+  var UBIC = { pedida: false, negada: false, intentos: 0 };
+  function botonCerca() { return '<div data-ubic>' + htmlCerca() + '</div>'; }
+  function htmlCerca() {
+    if (UBIC.negada && !POS) {
+      var plat = window.Capacitor && Capacitor.getPlatform ? Capacitor.getPlatform() : 'web';
+      var donde = plat === 'ios' ? 'Ajustes › Salimos › Ubicación › «Mientras se usa la app»'
+        : plat === 'android' ? 'Ajustes › Aplicaciones › Salimos › Permisos › Ubicación'
+        : 'los ajustes del navegador, en el candado junto a la dirección';
+      return '<div class="flex flex-col gap-space-sm p-space-md rounded-lg bg-surface-container-lowest shadow-md">' +
+        '<div class="flex items-center gap-3"><span class="w-11 h-11 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center flex-shrink-0">' + ic('location_off', 'text-[22px]', true) + '</span>' +
+        '<span class="flex flex-col min-w-0"><span class="font-label-prominent text-[16px] leading-[20px] text-on-surface">Activa tu ubicación</span>' +
+        '<span class="font-body-sm text-body-sm text-on-surface-variant">Así te enseñamos lo que tienes cerca. Tu ubicación no sale de tu móvil.</span></span></div>' +
+        '<button type="button" class="' + BOTON + '" data-reubicar>' + ic('my_location', 'text-[20px]') + ' Activar ubicación</button>' +
+        (UBIC.intentos ? '<p class="font-body-sm text-body-sm text-on-surface">Si no te sale la pregunta, actívala en ' + donde + '.</p>' : '') + '</div>';
+    }
     return '<a href="#/cerca" data-cerca class="flex items-center gap-3 p-space-md rounded-lg bg-gradient-to-br from-secondary via-on-secondary-container to-secondary text-on-secondary shadow-md active:scale-[0.98] transition-transform">' +
       '<span class="w-11 h-11 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center flex-shrink-0">' + ic('near_me', 'text-[22px]', true) + '</span>' +
       '<span class="flex flex-col min-w-0 flex-1"><span class="font-label-prominent text-label-prominent">Dónde salir cerca de mí</span>' +
       '<span class="font-label-micro text-label-micro text-secondary-fixed">Ordenado por distancia. Tu ubicación no sale de tu móvil.</span></span>' + ic('chevron_right', 'text-[22px] text-secondary-fixed') + '</a>';
   }
+  function repintarCerca() { document.querySelectorAll('[data-ubic]').forEach(function (d) { d.innerHTML = htmlCerca(); }); }
+  /* Si estás en otro destino con sitios, te lo cambiamos. Devuelve true si ha cambiado. */
+  function colocarDestino() {
+    var masCerca = TODOS.filter(function (l) { return l.lat != null; }).sort(function (a, b) { return kmEntre(POS.lat, POS.lng, a.lat, a.lng) - kmEntre(POS.lat, POS.lng, b.lat, b.lng); })[0];
+    if (masCerca && masCerca.destino !== DESTINO && kmEntre(POS.lat, POS.lng, masCerca.lat, masCerca.lng) < 60) { elegirDestino(masCerca.destino); guardar('destino', DESTINO); return true; }
+    return false;
+  }
+  function ubicar(forzar) {
+    if (POS || (UBIC.pedida && !forzar)) return Promise.resolve();
+    UBIC.pedida = true;
+    return pedirPosicion().then(function (p) {
+      POS = p; UBIC.negada = false;
+      if (colocarDestino() && document.querySelector('[data-ubic]')) ir();
+      else repintarCerca();
+    }, function (e) { UBIC.negada = !!e && e.code === 1; repintarCerca(); });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-reubicar]'); if (!b) return;
+    b.disabled = true; UBIC.intentos++; ubicar(true);
+  });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && !POS) { UBIC.pedida = false; if (document.querySelector('[data-ubic]')) ubicar(); }
+  });
   function kmEntre(a, b, c, d) {
     var r = Math.PI / 180, x = Math.sin((c - a) * r / 2), y = Math.sin((d - b) * r / 2);
     return 12742 * Math.asin(Math.sqrt(x * x + Math.cos(a * r) * Math.cos(c * r) * y * y));
@@ -953,9 +983,7 @@
         return;
       }
       if (location.hash !== '#/cerca') return;
-      /* Si estás en otro destino con sitios, te lo cambiamos. */
-      var masCerca = TODOS.filter(function (l) { return l.lat != null; }).sort(function (a, b) { return kmEntre(POS.lat, POS.lng, a.lat, a.lng) - kmEntre(POS.lat, POS.lng, b.lat, b.lng); })[0];
-      if (masCerca && masCerca.destino !== DESTINO && kmEntre(POS.lat, POS.lng, masCerca.lat, masCerca.lng) < 60) { elegirDestino(masCerca.destino); guardar('destino', DESTINO); }
+      colocarDestino();
     }
     var lista = TODOS.filter(function (l) { return l.lat != null && (!filtroCerca || l.tipo === filtroCerca || l.tipo2 === filtroCerca); })
       .map(function (l) { return { l: l, km: kmEntre(POS.lat, POS.lng, l.lat, l.lng) }; })
@@ -980,7 +1008,6 @@
   function checkinVivo(id) { var h = YO.checkins[id]; return !!h && new Date(h) > new Date(); }
   function hora(iso) { return new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }); }
   function tarjetaCheckin(l) {
-    if (window.Capacitor) return '';   /* la app 1.0.0 no pide ubicación: llega con la 1.0.1 */
     var vivo = checkinVivo(l.id), verificado = (votosDe()[l.id] || {}).verificado;
     var cuantos = l.verificados ? '<span class="font-label-badge text-label-badge text-on-secondary-fixed bg-secondary-fixed/60 px-2 py-0.5 rounded-full flex-shrink-0">' + l.verificados + (l.verificados === 1 ? ' verificado' : ' verificados') + '</span>' : '';
     var cuerpo = vivo || verificado
@@ -1010,7 +1037,6 @@
     P.local(l.id);
   }
   function avisoVerificado(l, previo) {
-    if (window.Capacitor) return '';
     if (checkinVivo(l.id) || previo.verificado)
       return '<div class="flex items-center gap-2 p-space-sm rounded-DEFAULT bg-tertiary-container/30 text-on-surface font-body-sm text-body-sm">' + ic('verified', 'text-[20px] text-tertiary', true) + '<span>Tu voto sale <strong>verificado</strong>: «Estuvo allí».</span></div>';
     return '<a href="#/local/' + l.id + '" class="flex items-center gap-2 p-space-sm rounded-DEFAULT bg-surface-container-high text-on-surface font-body-sm text-body-sm">' + ic('where_to_vote', 'text-[20px] text-secondary') +
@@ -1025,7 +1051,7 @@
      enlaza a su origen en Google Maps y lleva la marca «Google Maps». */
   var GOOGLE = {};
   async function fotoGoogle(l) {
-    if (l.foto || window.Capacitor) return;
+    if (l.foto) return;
     var g = GOOGLE[l.id];
     if (!g) {
       try { g = await (await fetch(SB_URL + '/functions/v1/salimos-foto-google?local=' + encodeURIComponent(l.id))).json(); } catch (e) { return; }
@@ -1043,7 +1069,7 @@
     };
     cab.firstElementChild.appendChild(img);
   }
-  function puedeSubirFoto(l) { return !window.Capacitor && !!usuario() && YO.perfil && (YO.admin || checkinVivo(l.id)); }
+  function puedeSubirFoto(l) { return !!usuario() && YO.perfil && (YO.admin || checkinVivo(l.id)); }
   async function pintarFotos(l) {
     var caja = document.getElementById('fotos'); if (!caja) return;
     var r = await sb.rpc('salimos_fotos', { p_local: l.id });
