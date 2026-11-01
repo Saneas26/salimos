@@ -433,7 +433,12 @@
       l.telefono ? dato('call', l.telefono.split('/').map(function (t) {
         t = t.trim(); return '<a class="font-bold text-secondary" href="tel:+34' + t.replace(/\D/g, '').replace(/^34(?=\d{9}$)/, '') + '">' + esc(t) + '</a>';
       }).join(' · ')) : '',
-      l.web ? dato('language', '<a class="font-bold text-secondary" href="' + esc(l.web) + '" target="_blank" rel="noopener">' + esc(l.web.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')) + '</a>') : '',
+      /* Contacto en la red: uno o varios enlaces separados por espacios (web, Instagram, Facebook, correo). */
+      l.web ? dato('language', l.web.trim().split(/\s+/).map(function (u) {
+        var texto = /^mailto:/.test(u) ? u.slice(7) : /instagram\.com/.test(u) ? 'Instagram' : /facebook\.com/.test(u) ? 'Facebook'
+          : u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+        return '<a class="font-bold text-secondary" href="' + esc(u) + '"' + (/^mailto:/.test(u) ? '' : ' target="_blank" rel="noopener"') + '>' + esc(texto) + '</a>';
+      }).join(' · ')) : '',
       l.precios ? dato('euro', esc(l.precios)) : '',
       l.consejo ? dato('lightbulb', esc(l.consejo)) : ''
     ].join('');
