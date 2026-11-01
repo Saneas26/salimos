@@ -436,7 +436,7 @@
       /* Contacto en la red: uno o varios enlaces separados por espacios (web, Instagram, Facebook, correo). */
       l.web ? dato('language', l.web.trim().split(/\s+/).map(function (u) {
         var texto = /^mailto:/.test(u) ? u.slice(7) : /instagram\.com/.test(u) ? 'Instagram' : /facebook\.com/.test(u) ? 'Facebook'
-          : u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+          : u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/.*$/, '');
         return '<a class="font-bold text-secondary" href="' + esc(u) + '"' + (/^mailto:/.test(u) ? '' : ' target="_blank" rel="noopener"') + '>' + esc(texto) + '</a>';
       }).join(' · ')) : '',
       l.precios ? dato('euro', esc(l.precios)) : '',
