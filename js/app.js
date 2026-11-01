@@ -152,8 +152,8 @@
   function filaRanking(l, i, valor, n, colorNota) {
     return '<a href="#/local/' + l.id + '" class="flex items-center justify-between p-3 rounded-DEFAULT bg-surface-container-low hover:bg-surface-container transition-colors">' +
       '<div class="flex items-center gap-3 min-w-0"><span class="font-score-display text-score-display ' + (COLOR_PUESTO[i] || 'text-on-surface-variant') + ' flex-shrink-0 w-6 text-center">' + (i + 1) + '</span>' +
-      '<div class="flex flex-col min-w-0 gap-0.5"><span class="font-label-prominent text-[17px] leading-[22px] font-bold text-on-surface truncate">' + esc(l.nombre) + '</span>' +
-      '<span class="font-body-md text-[14px] leading-[18px] text-on-surface-variant truncate">' + nombreTipos(l) + ' • ' + rotulo(l) + '</span></div></div>' +
+      '<div class="flex flex-col min-w-0 gap-0.5"><span class="font-label-prominent text-[19px] leading-[24px] font-bold text-on-surface truncate">' + esc(l.nombre) + '</span>' +
+      '<span class="font-body-md text-[16px] leading-[21px] text-on-surface-variant truncate">' + nombreTipos(l) + ' • ' + rotulo(l) + '</span></div></div>' +
       '<div class="flex flex-col items-end flex-shrink-0 pl-2"><div class="flex items-center gap-1 ' + (colorNota || 'text-tertiary') + '"><span class="font-headline-md text-headline-md leading-none">' + n1(valor) + '</span>' + ic('star', 'text-[16px]', true) + '</div>' +
       '<span class="font-label-micro text-label-micro text-on-surface-variant">' + n + (n === 1 ? ' voto' : ' votos') + '</span></div></a>';
   }
@@ -162,8 +162,8 @@
     var c = cifras(l);
     return '<a href="#/local/' + l.id + '" class="flex items-center justify-between p-3 rounded-DEFAULT bg-surface-container-low hover:bg-surface-container transition-colors">' +
       '<div class="flex items-center gap-3 min-w-0"><span class="w-6 flex justify-center flex-shrink-0">' + ic(tipo(l.tipo).icono, 'text-[22px] text-secondary') + '</span>' +
-      '<div class="flex flex-col min-w-0 gap-0.5"><span class="font-label-prominent text-[17px] leading-[22px] font-bold text-on-surface truncate">' + esc(l.nombre) + '</span>' +
-      '<span class="font-body-md text-[14px] leading-[18px] text-on-surface-variant truncate">' + nombreTipos(l) + ' • ' + rotulo(l) + '</span></div></div>' +
+      '<div class="flex flex-col min-w-0 gap-0.5"><span class="font-label-prominent text-[19px] leading-[24px] font-bold text-on-surface truncate">' + esc(l.nombre) + '</span>' +
+      '<span class="font-body-md text-[16px] leading-[21px] text-on-surface-variant truncate">' + nombreTipos(l) + ' • ' + rotulo(l) + '</span></div></div>' +
       '<span class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-fixed/50 text-on-secondary-fixed font-label-badge text-label-badge flex-shrink-0 ml-2">' +
       (c.votos ? c.votos + (c.votos === 1 ? ' voto' : ' votos') : 'Sin votos') + '</span></a>';
   }
