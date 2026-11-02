@@ -70,7 +70,7 @@
 <footer class="px-gutter-mobile pb-28 flex flex-col gap-space-md" id="pie">
   <aside class="flex items-center gap-2 p-3 rounded-full bg-on-surface text-surface-container-lowest shadow-lg"><span class="w-2.5 h-2.5 rounded-full bg-tertiary-fixed animate-ping flex-shrink-0 ml-1"></span><span class="font-label-badge text-label-badge">Aquí nadie paga: ni locales, ni marcas, ni anuncios.</span></aside>
   <p class="font-label-micro text-label-micro text-on-surface-variant uppercase tracking-wider font-bold px-1">El Grupo Saneas</p>
-  <div class="grupo-pie"></div>
+  
   <p class="font-label-prominent text-label-prominent text-center text-secondary"><a href="privacidad.html">Privacidad</a> · <a href="#/como-funciona">Cómo funciona</a></p>
 </footer>
 
@@ -97,7 +97,7 @@
       texto: 'Si te gusta el mundo de la nutrición, ahora tú también puedes. Más fácil que nunca.'
     }]
   });
-  document.querySelectorAll('.grupo-pie').forEach(function (p) { p.innerHTML = GrupoSaneas.gridHTML(); });
+  
   /* Contador del grupo: solo fuera de este Mac, para no contar las pruebas.
      Dentro de la app de las tiendas la dirección también es «localhost», pero sí cuenta. */
   if (window.Capacitor || !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
