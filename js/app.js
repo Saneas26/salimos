@@ -123,6 +123,14 @@
   }
 
   /* El hueco de la foto: hasta que haya fotos propias, el degradado del banner de Stitch con el icono del tipo. */
+  /* Mapa pequeño de Gran Canaria con un punto rojo: de un vistazo, si el sitio te pilla lejos. Contorno de Natural Earth (dominio público). */
+  function mapaIsla(l, clase) {
+    if (l.destino !== 'Gran Canaria' || l.lat == null || l.lng == null) return '';
+    var x = (l.lng - (-15.8218)) * 0.88336 * 247.101 + 8, y = (28.1798 - l.lat) * 247.101 + 8;
+    return '<svg viewBox="0 0 116 126.1" class="' + clase + '" role="img" aria-label="En el mapa de Gran Canaria: ' + esc(l.municipio) + '">' +
+      '<path d="M101.9 45.0 107.1 48.5 108.0 50.0 105.1 62.9 108.0 66.9 108.0 68.6 105.6 69.7 104.0 71.9 101.9 77.2 105.3 85.1 104.9 88.9 98.5 92.4 88.5 104.0 69.6 110.3 63.8 116.8 61.2 118.1 54.8 114.1 45.4 113.4 37.7 110.9 25.9 100.8 23.3 96.6 18.7 93.9 15.8 90.9 9.5 76.8 8.1 71.7 9.2 66.9 8.0 60.2 9.2 53.4 11.2 51.2 23.7 43.5 29.1 38.4 32.8 32.2 31.6 26.2 34.1 24.0 35.0 19.5 34.6 14.6 33.2 11.1 38.0 11.0 42.2 12.7 45.3 11.9 57.1 16.0 73.6 16.0 87.2 19.3 92.4 17.6 91.6 9.2 98.0 8.0 98.9 8.5 100.1 11.6 100.0 13.6 98.2 14.4 96.6 17.5 96.8 24.1 99.2 38.5 101.9 45.0Z" fill="#dce1ff" stroke="#4059aa" stroke-width="3" stroke-linejoin="round"/>' +
+      '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="11" fill="#e11d1d" stroke="#fff" stroke-width="3"/></svg>';
+  }
   function lienzo(l, alto) {
     if (l.foto) return '<div class="relative w-full ' + alto + ' bg-secondary overflow-hidden"><img src="' + esc(urlFoto(l.foto)) + '" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover">';
     return '<div class="relative w-full ' + alto + ' bg-gradient-to-br from-secondary via-on-secondary-container to-secondary overflow-hidden">' +
@@ -136,6 +144,7 @@
     return '<a href="#/local/' + l.id + '" class="flex-shrink-0 w-[290px] rounded-lg bg-surface-container-lowest shadow-md overflow-hidden flex flex-col transition-transform duration-200 active:scale-[0.99]">' +
       lienzo(l, 'h-44') +
       '<div class="absolute top-2.5 left-2.5 flex items-center gap-1 px-2.5 py-1 rounded-full bg-on-surface/75 backdrop-blur-md text-surface-container-lowest font-label-badge text-label-badge"><span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed"></span><span>100% Sin Patrocinio</span></div>' +
+      '<div class="absolute bottom-2.5 left-2.5 rounded bg-surface-container-lowest/90 p-1 shadow-md">' + mapaIsla(l, 'block w-12 h-[52px]') + '</div>' +
       '<div class="absolute bottom-2.5 right-2.5 flex items-center gap-1 px-3 py-1 rounded-full bg-primary-container text-on-primary-container shadow-md">' +
       (puntua ? '<span class="font-score-display text-score-display leading-none">' + n1(c.nota) + '</span><span class="font-label-micro text-label-micro font-bold opacity-80">/10</span>'
               : '<span class="font-label-prominent text-label-prominent leading-none py-1">Sin votos</span>') + '</div></div>' +
@@ -161,7 +170,7 @@
   function filaSitio(l) {
     var c = cifras(l);
     return '<a href="#/local/' + l.id + '" class="flex items-center justify-between p-3 rounded-DEFAULT bg-surface-container-low hover:bg-surface-container transition-colors">' +
-      '<div class="flex items-center gap-3 min-w-0"><span class="w-6 flex justify-center flex-shrink-0">' + ic(tipo(l.tipo).icono, 'text-[22px] text-secondary') + '</span>' +
+      '<div class="flex items-center gap-3 min-w-0"><span class="w-11 flex justify-center flex-shrink-0">' + (mapaIsla(l, 'w-11 h-12') || ic(tipo(l.tipo).icono, 'text-[22px] text-secondary')) + '</span>' +
       '<div class="flex flex-col min-w-0 gap-0.5"><span class="font-label-prominent text-[19px] leading-[24px] font-bold text-on-surface truncate">' + esc(l.nombre) + '</span>' +
       '<span class="font-body-md text-[16px] leading-[21px] text-on-surface-variant truncate">' + nombreTipos(l) + ' • ' + rotulo(l) + '</span></div></div>' +
       '<span class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-fixed/50 text-on-secondary-fixed font-label-badge text-label-badge flex-shrink-0 ml-2">' +
@@ -455,7 +464,7 @@
       '<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-surface-container-lowest leading-tight">' + esc(l.nombre) + '</h2></div>' +
       (m ? '<span class="px-2.5 py-1 rounded-full bg-surface-container-lowest/20 backdrop-blur-md font-label-micro text-label-micro text-surface-container-lowest flex-shrink-0">Gente de ' + m.nombre.replace('De ', '').toLowerCase() + '</span>' : '') +
       '</div></div><p class="hidden pt-1.5 font-label-micro text-label-micro text-on-surface-variant text-right" id="credito-google"></p></div>' +
-      '<div class="px-gutter pb-space-md"><p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1.5">' + ic('explore', 'text-[18px] text-secondary flex-shrink-0') +
+      '<div class="px-gutter pb-space-md flex items-center gap-space-md">' + mapaIsla(l, 'w-20 h-[88px] flex-shrink-0') + '<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1.5">' + ic('explore', 'text-[18px] text-secondary flex-shrink-0') +
       '<span>' + nombreTipos(l) + ' • ' + esc(l.municipio) + '</span></p></div>' +
       /* Tarjeta azul de la nota */
       '<div class="px-gutter pb-space-md"><div class="relative overflow-hidden rounded-lg bg-secondary text-on-secondary p-space-lg shadow-xl">' +
@@ -476,7 +485,7 @@
       '<div class="px-gutter pb-space-lg" id="fotos"></div>' +
       (l.video ? '<div class="px-gutter pb-space-lg"><h3 class="font-headline-md text-headline-md text-on-surface mb-space-xs">En vídeo</h3><div id="caja-video">' +
         '<button type="button" id="ver-video" class="w-full h-16 rounded-full bg-secondary text-on-secondary font-headline-md text-headline-md flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95">' + ic('play_circle', 'text-[28px]') + ' Ver el vídeo</button></div>' +
-        '<p class="font-body-sm text-body-sm text-on-surface-variant mt-space-xs">' + (l.video_autor ? 'De @' + esc(l.video_autor) + ' · ' : '') + '<a class="font-bold text-secondary" href="' + esc(l.video) + '" target="_blank" rel="noopener">Verlo en ' + (/tiktok\.com/.test(l.video) ? 'TikTok' : 'Instagram') + '</a></p></div>' : '') +
+        '<p class="font-body-sm text-body-sm text-on-surface-variant mt-space-xs">Vídeo' + (l.video_autor ? ' de @' + esc(l.video_autor) : '') + ' en ' + (/tiktok\.com/.test(l.video) ? 'TikTok' : 'Instagram') + '</p></div>' : '') +
       (etiquetas ? '<div class="px-gutter pb-space-lg"><div class="flex items-center justify-between mb-space-xs"><h3 class="font-headline-md text-headline-md text-on-surface">Lo que tiene</h3><span class="font-label-micro text-label-micro text-secondary font-semibold">Datos del sitio</span></div>' +
         '<div class="flex flex-wrap gap-space-xs mt-space-xs">' + etiquetas + '</div></div>' : '') +
       '<div class="px-gutter pb-space-lg"><div class="flex items-center justify-between mb-space-xs"><h3 class="font-headline-md text-headline-md text-on-surface">Veredicto de la Comunidad</h3><span class="font-label-micro text-label-micro text-secondary font-semibold">Basado en votos</span></div>' +
@@ -495,8 +504,8 @@
     var bc = document.getElementById('checkin'); if (bc) bc.onclick = function () { hacerCheckin(l, bc); };
     var bv = document.getElementById('ver-video');
     if (bv) bv.onclick = function () {
-      /* Instagram o TikTok solo entran si se pulsa: hasta entonces la ficha no les pide nada. */
-      document.getElementById('caja-video').innerHTML = '<iframe src="' + esc(urlVideo(l.video)) + '" title="Vídeo de ' + esc(l.nombre) + '" class="w-full rounded-lg bg-surface-container" style="height:640px;border:0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>';
+      /* Instagram o TikTok solo entran si se pulsa. El sandbox sin allow-popups ni allow-top-navigation impide que un toque saque de la app. */
+      document.getElementById('caja-video').innerHTML = '<iframe src="' + esc(urlVideo(l.video)) + '" title="Vídeo de ' + esc(l.nombre) + '" class="w-full rounded-lg bg-surface-container" style="height:640px;border:0" sandbox="allow-scripts allow-same-origin allow-presentation" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>';
     };
     pintarFotos(l);
     fotoGoogle(l);

@@ -1,6 +1,6 @@
 {
   "name": "salimos",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "Salimos · dónde salir en Gran Canaria según la gente que sale, empaquetada como app Android e iOS con Capacitor",
   "scripts": {
