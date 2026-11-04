@@ -50,3 +50,7 @@ from salimos.locales l, (values ('dentro.jpg', 0), ('fachada.jpg', 1), ('mesa-va
 where l.nombre = 'Casa Lolo' on conflict (ruta) do nothing;
 
 select nombre, nota_oscar, video, (select count(*) from salimos.fotos f where f.local_id = l.id) fotos from salimos.locales l where nombre = 'Casa Lolo';
+
+-- Mismo día: las 3 fotos mejoradas con Real-ESRGAN (×4, revisadas por Óscar): sustituyen a las miniaturas.
+update salimos.fotos set ruta = replace(ruta, '.jpg', '-hd.jpg')
+where ruta like 'locales/058c4f41-87ef-4aa0-8df9-6b4cb702694f/%' and ruta not like '%-hd.jpg';
