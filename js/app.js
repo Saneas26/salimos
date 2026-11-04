@@ -471,7 +471,12 @@
       '<span class="font-label-micro text-label-micro text-surface-container-lowest">' + (c.votos < S.MIN_VOTOS_RANKING ? 'Entra en los rankings con ' + S.MIN_VOTOS_RANKING + ' votos' : 'Una persona, un voto por sitio') + '</span></div>' +
       '<span class="font-label-badge text-label-badge text-primary-fixed flex-shrink-0">100% ' + esc(l.destino.toUpperCase()) + '</span></div></div></div>' +
       tarjetaCheckin(l) +
+      (l.nota_oscar ? '<div class="px-gutter pb-space-lg"><div class="rounded-lg bg-surface-container-lowest p-space-lg shadow-sm"><div class="flex items-center gap-2 mb-space-xs">' + ic('format_quote', 'text-[24px] text-primary') + '<h3 class="font-headline-md text-headline-md text-on-surface">Lo que dice Óscar</h3></div>' +
+        '<p class="font-body-lg text-body-lg text-on-surface">' + esc(l.nota_oscar) + '</p><p class="font-label-prominent text-label-prominent text-on-surface-variant mt-space-sm">Óscar, de Salimos</p></div></div>' : '') +
       '<div class="px-gutter pb-space-lg" id="fotos"></div>' +
+      (l.video ? '<div class="px-gutter pb-space-lg"><h3 class="font-headline-md text-headline-md text-on-surface mb-space-xs">En vídeo</h3><div id="caja-video">' +
+        '<button type="button" id="ver-video" class="w-full h-16 rounded-full bg-secondary text-on-secondary font-headline-md text-headline-md flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95">' + ic('play_circle', 'text-[28px]') + ' Ver el vídeo</button></div>' +
+        '<p class="font-body-sm text-body-sm text-on-surface-variant mt-space-xs">' + (l.video_autor ? 'De @' + esc(l.video_autor) + ' · ' : '') + '<a class="font-bold text-secondary" href="' + esc(l.video) + '" target="_blank" rel="noopener">Verlo en Instagram</a></p></div>' : '') +
       (etiquetas ? '<div class="px-gutter pb-space-lg"><div class="flex items-center justify-between mb-space-xs"><h3 class="font-headline-md text-headline-md text-on-surface">Lo que tiene</h3><span class="font-label-micro text-label-micro text-secondary font-semibold">Datos del sitio</span></div>' +
         '<div class="flex flex-wrap gap-space-xs mt-space-xs">' + etiquetas + '</div></div>' : '') +
       '<div class="px-gutter pb-space-lg"><div class="flex items-center justify-between mb-space-xs"><h3 class="font-headline-md text-headline-md text-on-surface">Veredicto de la Comunidad</h3><span class="font-label-micro text-label-micro text-secondary font-semibold">Basado en votos</span></div>' +
@@ -488,6 +493,11 @@
 
     document.getElementById('atras').onclick = function () { if (history.length > 1) history.back(); else location.hash = '#/explorar'; };
     var bc = document.getElementById('checkin'); if (bc) bc.onclick = function () { hacerCheckin(l, bc); };
+    var bv = document.getElementById('ver-video');
+    if (bv) bv.onclick = function () {
+      /* Instagram solo entra si se pulsa: hasta entonces la ficha no le pide nada. */
+      document.getElementById('caja-video').innerHTML = '<iframe src="' + esc(l.video.replace(/\/?$/, '/') + 'embed/') + '" title="Vídeo de ' + esc(l.nombre) + '" class="w-full rounded-lg bg-surface-container" style="height:640px;border:0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>';
+    };
     pintarFotos(l);
     fotoGoogle(l);
     document.getElementById('btn-bookmark').onclick = function () {
@@ -1077,7 +1087,7 @@
     var sube = puedeSubirFoto(l);
     if (!fotos.length && !sube) { caja.innerHTML = ''; return; }
     caja.innerHTML = '<div class="flex items-center justify-between mb-space-xs"><h3 class="font-headline-md text-headline-md text-on-surface">Fotos</h3>' +
-      '<span class="font-label-micro text-label-micro text-secondary font-semibold">' + (fotos.length ? 'De quien estuvo allí y del local' : 'Todavía ninguna') + '</span></div>' +
+      '<span class="font-label-micro text-label-micro text-secondary font-semibold">' + (fotos.length ? (fotos.length === 1 ? '1 foto' : fotos.length + ' fotos') : 'Todavía ninguna') + '</span></div>' +
       (fotos.length ? '<div class="grid grid-cols-3 gap-1.5 rounded-lg overflow-hidden">' + fotos.map(function (f, i) {
         return '<button type="button" class="relative aspect-square bg-surface-container overflow-hidden" data-foto="' + i + '" aria-label="Ver foto ' + (i + 1) + '"><img src="' + esc(urlFoto(f.ruta)) + '" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover"></button>';
       }).join('') + '</div>' : '') +
