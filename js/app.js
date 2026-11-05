@@ -100,7 +100,10 @@
     return '<span class="material-symbols-outlined ' + (clases || '') + '"' + (relleno ? ' style="font-variation-settings: \'FILL\' 1;"' : '') + ' aria-hidden="true">' + nombre + '</span>';
   }
   function n1(v) { return (Math.round(v * 10) / 10).toFixed(1); }
-  function nombreTipos(l) { return esc(tipo(l.tipo).nombre + (l.tipo2 ? ' y ' + tipo(l.tipo2).nombre.toLowerCase() : '')); }
+  function nombreTipos(l) {
+    var resto = [l.tipo3, l.tipo2].filter(Boolean).map(function (t) { return tipo(t).nombre.toLowerCase(); });
+    return esc(tipo(l.tipo).nombre + (resto.length > 1 ? ', ' + resto[0] + ' y ' + resto[1] : resto.length ? ' y ' + resto[0] : ''));
+  }
   function euros(l) { return l.precio ? '€€€'.slice(0, l.precio) : ''; }
   function rotulo(l) { return esc((l.barrio || l.municipio).replace(/ · /g, ' • ')); }
   function seccion(t) { var s = document.getElementById('seccion'); if (s) s.textContent = t; }
@@ -336,10 +339,10 @@
   function filtrados() {
     var q = sinTildes(filtro.texto.trim());
     return LOCALES.filter(function (l) {
-      if (filtro.tipo && l.tipo !== filtro.tipo && l.tipo2 !== filtro.tipo) return false;
+      if (filtro.tipo && l.tipo !== filtro.tipo && l.tipo2 !== filtro.tipo && l.tipo3 !== filtro.tipo) return false;
       if (filtro.zona && l.zona !== filtro.zona) return false;
       if (filtro.edades.length && !encajaEdad(mayoria(cifras(l)), filtro.edades)) return false;
-      if (q && sinTildes(l.nombre + ' ' + l.municipio + ' ' + (l.barrio || '') + ' ' + tipo(l.tipo).nombre + ' ' + ((zona(l.zona) || {}).nombre || '')).indexOf(q) < 0) return false;
+      if (q && sinTildes(l.nombre + ' ' + l.municipio + ' ' + (l.barrio || '') + ' ' + tipo(l.tipo).nombre + ' ' + (l.tipo3 ? tipo(l.tipo3).nombre : '') + ' ' + ((zona(l.zona) || {}).nombre || '')).indexOf(q) < 0) return false;
       return true;
     });
   }
@@ -1004,7 +1007,7 @@
       if (location.hash !== '#/cerca') return;
       colocarDestino();
     }
-    var lista = TODOS.filter(function (l) { return l.lat != null && (!filtroCerca || l.tipo === filtroCerca || l.tipo2 === filtroCerca); })
+    var lista = TODOS.filter(function (l) { return l.lat != null && (!filtroCerca || l.tipo === filtroCerca || l.tipo2 === filtroCerca || l.tipo3 === filtroCerca); })
       .map(function (l) { return { l: l, km: kmEntre(POS.lat, POS.lng, l.lat, l.lng) }; })
       .sort(function (a, b) { return a.km - b.km; }).slice(0, 25);
     var chip = function (id, icono, txt) { var on = filtroCerca === id; return '<button type="button" class="category-chip flex items-center gap-1.5 px-3.5 py-2 rounded-full shadow-sm active:scale-95 transition-all flex-shrink-0 ' + (on ? CHIP_ON : CHIP_OFF) + '" data-tipo="' + id + '" aria-pressed="' + on + '">' + ic(icono, 'text-[18px]') + '<span class="font-label-prominent text-label-prominent whitespace-nowrap">' + txt + '</span></button>'; };

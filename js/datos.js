@@ -7,6 +7,7 @@
     { id: 'restaurante', nombre: 'Restaurante',    plural: 'Comer',        icono: 'restaurant' },
     { id: 'guachinche',  nombre: 'Guachinche',     plural: 'Guachinches',  icono: 'outdoor_grill' },
     { id: 'terraza',     nombre: 'Terraza',        plural: 'Terrazas',     icono: 'deck' },
+    { id: 'tardeo',      nombre: 'Tardeo',         plural: 'Tardeo',       icono: 'wb_sunny' },
     { id: 'copas',       nombre: 'Bar de copas',   plural: 'Copas',        icono: 'local_bar' },
     { id: 'musica',      nombre: 'Bar de música',  plural: 'Música',       icono: 'music_note' },
     { id: 'discoteca',   nombre: 'Discoteca',      plural: 'Discotecas',   icono: 'nightlife' },
