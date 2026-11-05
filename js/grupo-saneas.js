@@ -46,6 +46,7 @@ var GrupoSaneas = (function(){
       ios:'https://apps.apple.com/app/id6823295817',
       texto:'En un avión no hay datos ni wifi. Ahora puedes entretenerte y saber por dónde vas, de manera gratuita. Las 20 noticias más importantes del día te acompañan, junto a los principales podcast en español. Con itinerarios a las principales ciudades europeas.' },
     { id:'salimos', nombre:'Salimos', logo:'app-salimos.png', url:'https://salimos.saneas.es', tipo:'una aplicación',
+      play:'https://play.google.com/store/apps/details?id=es.saneas.salimos',
       ios:'https://apps.apple.com/app/id6828431882',
       texto:'Bares, restaurantes y sitios de ocio de Gran Canaria, con opiniones libres de quien ha estado allí. Sin patrocinios de nadie. Gratis y sin anuncios.' },
     { id:'activala', nombre:'Activala', logo:'app-activala.png', url:'https://activala.es', tipo:'una página web',
