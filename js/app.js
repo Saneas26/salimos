@@ -308,21 +308,18 @@
       '<div class="relative flex items-center justify-center mb-space-lg mt-space-md"><div class="absolute w-24 h-24 rounded-full bg-primary-container/20 animate-pulse"></div><div class="absolute w-32 h-32 rounded-full bg-secondary-fixed/30"></div>' +
       '<div class="relative w-20 h-20 rounded-2xl bg-secondary flex items-center justify-center shadow-lg transform rotate-3 hover:rotate-0 transition-transform">' + ic('verified', 'text-primary-container text-[42px]', true) +
       '<span class="absolute -top-1 -right-1 flex h-4 w-4"><span class="relative inline-flex rounded-full h-4 w-4 bg-tertiary-container items-center justify-center">' + ic('bolt', 'text-on-tertiary-container text-body-sm font-bold') + '</span></span></div></div>' +
-      '<div class="inline-flex items-center gap-1 bg-primary-fixed text-on-primary-fixed px-space-md py-0.5 rounded-full mb-space-sm font-label-badge text-label-badge">' + ic('shield_lock', 'text-body-sm', true) + ' GRUPO SANEAS • GRAN CANARIA</div>' +
       '<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface tracking-tight mb-space-xs max-w-xs">El ocio de Gran Canaria, sin trucos ni pagos</h1>' +
-      '<p class="font-body-md text-body-md text-on-surface-variant max-w-sm">Dónde comer, tomar algo, bailar o ligar, según la gente que sale. Creado por <strong class="font-semibold text-secondary">Grupo Saneas</strong>: aquí ningún local puede comprar su puesto.</p></section>' +
-      '<section class="flex flex-col gap-space-md mb-space-lg"><div class="flex items-center justify-between px-space-xs"><h2 class="font-headline-md text-headline-md text-on-surface">Los 4 pilares</h2>' +
-      '<span class="font-label-badge text-label-badge bg-secondary-fixed text-on-secondary-fixed px-2 py-0.5 rounded-full">Salimos</span></div>' +
+      '</section>' +
+      '<section class="flex flex-col gap-space-sm mb-space-lg">' +
       pilares.map(function (p) {
         return '<div class="pillar-card group cursor-pointer p-space-lg rounded-2xl bg-surface-container-low shadow-sm flex flex-col gap-space-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-md active:scale-[0.98]">' +
           '<div class="flex items-center justify-between"><div class="w-10 h-10 rounded-xl ' + p[1] + ' flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">' + ic(p[0], 'text-body-lg font-bold') + '</div>' +
-          '<span class="pillar-badge font-label-badge text-label-badge bg-surface-container-highest text-on-surface-variant px-space-sm py-0.5 rounded-full transition-all duration-300">' + p[2] + '</span></div>' +
-          '<h3 class="font-label-prominent text-headline-md text-on-surface mt-1">' + p[3] + '</h3><p class="font-body-md text-body-md text-on-surface-variant">' + p[4] + '</p>' +
-          (p[5] ? '<div class="flex flex-wrap gap-1 mt-space-xs">' + p[5].map(function (x) { return '<span class="font-label-badge text-label-badge bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded-md">' + x + '</span>'; }).join('') + '</div>' : '') + '</div>';
+          '</div>' +
+          '<h3 class="font-label-prominent text-headline-md text-on-surface mt-1">' + p[3] + '</h3></div>';
       }).join('') + '</section>' +
       '<div class="flex flex-col gap-space-sm pt-space-xs sticky bottom-0 bg-gradient-to-t from-surface via-surface to-transparent pb-space-sm">' +
-      '<button type="button" class="w-full h-16 bg-primary-container text-on-primary-container font-label-prominent text-[22px] leading-[28px] font-extrabold rounded-full flex items-center justify-center gap-space-sm shadow-lg hover:brightness-105 active:scale-95 transition-all" id="empezar">' + ic('how_to_reg', 'text-[28px]', true) + '<span>Entrar en Salimos</span></button>' +
-      '<a class="w-full py-space-sm text-center font-label-prominent text-label-prominent text-secondary hover:text-primary transition-colors" href="#/como-funciona">Cómo funciona</a></div></div>';
+      '<button type="button" class="w-full h-16 bg-primary-container text-on-primary-container font-headline-md text-headline-md rounded-full flex items-center justify-center gap-space-sm shadow-lg hover:brightness-105 active:scale-95 transition-all" id="empezar">' + ic('how_to_reg', 'text-[28px]', true) + '<span>Entrar en Salimos</span></button>' +
+      '<a class="w-full min-h-12 py-space-sm text-center font-body-lg text-body-lg font-bold text-secondary hover:text-primary transition-colors" href="#/como-funciona">Cómo funciona</a></div></div>';
 
     /* El pilar que queda en el centro de la pantalla se enciende, como en Stitch. */
     var cartas = vista.querySelectorAll('.pillar-card');
@@ -387,6 +384,13 @@
       return true;
     });
   }
+  /* Zonas y Cerca ya ordenan por sitio: aplican todos los filtros menos el de zona. */
+  function sinZona() {
+    var antes = filtro.zona; filtro.zona = '';
+    var base = filtrados(true);
+    filtro.zona = antes;
+    return base;
+  }
   function pintarResultados() {
     var base = filtrados();
     /* Lo más votado: como mucho 10 tarjetas en el carrusel. */
@@ -419,10 +423,7 @@
 
   P.zonas = function () {
     seccion('Zonas');
-    var des = S.destino(DESTINO), zonaAntes = filtro.zona;
-    filtro.zona = '';
-    var base = filtrados(true);
-    filtro.zona = zonaAntes;
+    var des = S.destino(DESTINO), base = sinZona();
     vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' +
       cabeceraSeccion('Zonas') + botonesFiltro(['tipo', 'edad', 'precio']) +
       botonCerca() +
@@ -792,38 +793,25 @@
     return '<div class="p-space-md rounded-DEFAULT bg-secondary-fixed/50 flex items-start gap-3 shadow-sm"><input class="mt-0.5 w-7 h-7 rounded-md accent-secondary text-secondary cursor-pointer flex-shrink-0" id="' + id + '" type="checkbox">' +
       '<label class="font-body-lg text-body-lg text-on-secondary-fixed cursor-pointer" for="' + id + '">' + html + '</label></div>';
   }
-  /* Banner oscuro de «Recomendar» de Stitch. */
-  function bannerOscuro(icono, ante, titulo, texto, pacto) {
-    return '<section class="relative overflow-hidden rounded-lg bg-inverse-surface p-space-lg shadow-md">' +
-      '<div class="absolute -right-10 -bottom-10 w-44 h-44 rounded-full bg-secondary opacity-30 blur-2xl pointer-events-none"></div><div class="absolute -left-6 -top-6 w-32 h-32 rounded-full bg-primary-container opacity-20 blur-xl pointer-events-none"></div>' +
-      '<div class="relative z-10 flex items-start gap-space-md"><div class="relative flex-shrink-0 w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center shadow-lg">' + ic(icono, 'text-[30px] text-primary-container', true) +
-      '<span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container shadow-sm">' + ic('check', 'text-[14px]', true) + '</span></div>' +
-      '<div class="flex flex-col min-w-0"><div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-tertiary/20 text-tertiary-fixed font-label-micro text-label-micro tracking-wide uppercase mb-1 self-start"><span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed animate-pulse"></span>' + ante + '</div>' +
-      '<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-inverse-on-surface">' + titulo + '</h1><p class="font-body-sm text-body-sm text-surface-container-high mt-0.5 break-words">' + texto + '</p></div></div>' +
-      (pacto ? '<div class="mt-space-md pt-space-sm bg-surface/10 rounded-DEFAULT p-space-sm backdrop-blur-md relative z-10"><div class="flex items-center gap-2 text-surface-container-lowest">' + ic('verified_user', 'text-primary-container text-[18px]') +
-        '<span class="font-label-prominent text-label-prominent text-surface-bright">' + pacto[0] + '</span></div><p class="font-body-sm text-body-sm text-surface-container-high mt-1 leading-snug">' + pacto[1] + '</p></div>' : '') + '</section>';
-  }
-
   P.entrar = function () {
     /* Con sesión (por ejemplo, de Trivial) pero sin perfil de Salimos: solo falta confirmar la edad. */
     var soloEdad = !!YO.sesion && !YO.perfil;
     if (YO.sesion && YO.perfil) { location.hash = leer('vuelta', '#/tu'); borrar('vuelta'); return; }
     seccion('Entrar');
     vista.innerHTML = '<div class="flex flex-col w-full px-gutter pt-space-md pb-8 gap-space-lg animate-screen-enter">' +
-      bannerOscuro('key', 'Sin contraseña', soloEdad ? 'Un paso más' : 'Entra para votar',
-        soloEdad ? 'Ya has entrado con ' + esc(YO.sesion.user.email) + '. Para votar en Salimos, confirma esto.' : 'Te mandamos un código a tu correo. Así cada persona vota una sola vez por sitio.') +
+      cabeceraSeccion(soloEdad ? 'Un paso más' : 'Entrar') +
       '<form class="flex flex-col gap-space-lg" id="f1" novalidate>' +
-      (soloEdad ? '' : '<div class="flex flex-col gap-1.5">' + etiquetaCampo('mail', 'Tu correo', 'correo') + '<input class="' + INPUT + '" type="email" id="correo" autocomplete="email" inputmode="email" placeholder="nombre@correo.com" required></div>') +
-      casilla('mayor', '<strong>Tengo 18 años o más.</strong>') +
-      casilla('acepto', 'He leído la <a class="font-bold underline" href="privacidad.html" target="_blank">política de privacidad</a>.') +
-      '<div class="flex flex-col gap-2"><button class="' + BOTON + '" type="submit">' + ic(soloEdad ? 'how_to_reg' : 'send', 'text-[22px]') + (soloEdad ? 'Confirmar' : 'Mandarme el código') + '</button>' +
-      '<p class="font-label-prominent text-label-prominent text-center text-error" id="err1" role="alert"></p></div></form>' +
-      '<form class="flex flex-col gap-space-lg" id="f2" hidden novalidate><div class="flex flex-col gap-1.5">' + etiquetaCampo('pin', 'Código que te ha llegado', 'cod') +
-      '<span class="font-body-sm text-body-sm text-on-surface-variant" id="aquien"></span>' +
+      (soloEdad ? '' : '<div class="flex flex-col gap-1.5">' + etiquetaCampo('mail', 'Tu correo', 'correo') + '<input class="' + INPUT + '" type="email" id="correo" autocomplete="email" inputmode="email" required></div>') +
+      casilla('mayor', 'Tengo 18 años o más') +
+      casilla('acepto', 'He leído la <a class="font-bold underline" href="privacidad.html" target="_blank">privacidad</a>') +
+      '<div class="flex flex-col gap-2"><button class="' + BOTON + '" type="submit">' + ic(soloEdad ? 'how_to_reg' : 'send', 'text-[22px]') + (soloEdad ? 'Confirmar' : 'Recibir código') + '</button>' +
+      '<p class="font-body-lg text-body-lg font-bold text-center text-error" id="err1" role="alert"></p></div></form>' +
+      '<form class="flex flex-col gap-space-lg" id="f2" hidden novalidate><div class="flex flex-col gap-1.5">' + etiquetaCampo('pin', 'Código', 'cod') +
+      '<span class="font-body-md text-body-md text-on-surface" id="aquien"></span>' +
       '<input class="' + INPUT + ' text-center font-score-display text-score-display tracking-[0.4em]" type="text" id="cod" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="········"></div>' +
       '<div class="flex flex-col gap-2"><button class="' + BOTON + '" type="submit">' + ic('login', 'text-[22px]') + 'Entrar</button>' +
-      '<p class="font-label-micro text-label-micro text-center text-on-surface-variant">¿No llega? Mira en «Correo no deseado» o espera un minuto.</p>' +
-      '<p class="font-label-prominent text-label-prominent text-center text-error" id="err2" role="alert"></p></div></form></div>';
+      '<p class="font-body-md text-body-md text-center text-on-surface">¿No llega? Mira en «No deseado».</p>' +
+      '<p class="font-body-lg text-body-lg font-bold text-center text-error" id="err2" role="alert"></p></div></form></div>';
 
     async function terminar() {
       var r = await sb.rpc('salimos_alta_perfil', { p_mayor_edad: true });
@@ -838,10 +826,10 @@
       err.textContent = '';
       if (!soloEdad) {
         correo = document.getElementById('correo').value.trim().toLowerCase();
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) { err.textContent = 'Revisa el correo: parece que falta algo.'; return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) { err.textContent = 'Revisa el correo.'; return; }
       }
-      if (!document.getElementById('mayor').checked) { err.textContent = 'Para votar hay que tener 18 años o más.'; return; }
-      if (!document.getElementById('acepto').checked) { err.textContent = 'Marca la casilla de privacidad para seguir.'; return; }
+      if (!document.getElementById('mayor').checked) { err.textContent = 'Hay que tener 18 años o más.'; return; }
+      if (!document.getElementById('acepto').checked) { err.textContent = 'Marca la casilla de privacidad.'; return; }
       bt.disabled = true;
       try {
         if (soloEdad) { await terminar(); return; }
@@ -859,18 +847,18 @@
         var r = await sb.auth.signInWithOtp({ email: correo, options: { shouldCreateUser: true, emailRedirectTo: VUELTA } });
         if (r.error) throw r.error;
         f1.hidden = true; document.getElementById('f2').hidden = false;
-        document.getElementById('aquien').textContent = 'Lo hemos mandado a ' + correo + '. Puede tardar un minuto.';
+        document.getElementById('aquien').textContent = 'Enviado a ' + correo;
         document.getElementById('cod').focus();
-      } catch (x) { err.textContent = /rate|seconds/i.test(textoError(x)) ? 'Espera un minuto antes de pedir otro código.' : textoError(x); }
+      } catch (x) { err.textContent = /rate|seconds/i.test(textoError(x)) ? 'Espera un minuto y pide otro.' : textoError(x); }
       bt.disabled = false;
     };
     document.getElementById('f2').onsubmit = async function (e) {
       e.preventDefault();
       var err = document.getElementById('err2'), bt = this.querySelector('button'), cod = document.getElementById('cod').value.trim();
-      if (!/^\d{6,10}$/.test(cod)) { err.textContent = 'Escribe el código tal como te ha llegado, solo las cifras.'; return; }
+      if (!/^\d{6,10}$/.test(cod)) { err.textContent = 'Escribe solo las cifras.'; return; }
       bt.disabled = true; err.textContent = '';
       var r = await sb.auth.verifyOtp({ email: correo, token: cod, type: 'email' });
-      if (r.error) { bt.disabled = false; err.textContent = 'Ese código no es. Mira el correo otra vez.'; return; }
+      if (r.error) { bt.disabled = false; err.textContent = 'Ese código no es.'; return; }
       try { await terminar(); } catch (x) { bt.disabled = false; err.textContent = textoError(x); }
     };
   };
@@ -922,24 +910,23 @@
     var u = usuario();
     var envolver = function (html) { vista.innerHTML = '<div class="flex flex-col w-full px-gutter pt-space-md pb-8 gap-space-lg animate-screen-enter">' + html + '</div>'; };
     var g = guardados().map(local).filter(Boolean);
-    var bloqueGuardados = '<div class="flex flex-col rounded-lg bg-surface-container-lowest shadow-md p-space-md gap-space-md"><div class="flex items-center gap-2"><div class="w-10 h-10 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center">' + ic('bookmark', 'text-[20px]', true) + '</div>' +
-      '<div><h4 class="font-label-prominent text-label-prominent text-on-surface">Guardados</h4><span class="font-label-micro text-label-micro text-on-surface-variant">Solo en este móvil</span></div></div>' +
-      '<div class="flex flex-col gap-space-xs">' + (g.length ? g.map(filaSitio).join('') : '<p class="p-2.5 rounded-DEFAULT bg-surface-container-low font-body-sm text-body-sm text-on-surface-variant">Toca el marcador de una ficha para guardarla aquí.</p>') + '</div></div>';
+    var bloque = function (icono, titulo, filas) {
+      return '<section class="flex flex-col gap-space-xs"><h2 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2 px-1">' + ic(icono, 'text-[28px] text-primary', true) + titulo + '</h2>' + filas + '</section>';
+    };
+    var vacio = function (txt) { return '<p class="p-space-md rounded-lg bg-surface-container-low font-body-lg text-body-lg text-on-surface">' + txt + '</p>'; };
+    var bloqueGuardados = bloque('bookmark', 'Guardados', g.length ? g.map(filaSitio).join('') : vacio('Ninguno.'));
     if (!u) {
-      envolver(bannerOscuro('person', 'Tu cuenta', 'Tú', 'Para mirar no hace falta cuenta. Para votar y recomendar, sí: así nadie vota dos veces.') +
-        '<a class="' + BOTON + '" href="#/entrar">' + ic('login', 'text-[22px]') + 'Entrar con mi correo</a>' + bloqueGuardados);
+      envolver(cabeceraSeccion('Tú') + '<a class="' + BOTON + '" href="#/entrar">' + ic('login', 'text-[26px]') + 'Entrar</a>' + bloqueGuardados);
       return;
     }
     if (!YO.perfil) { location.hash = '#/entrar'; return; }
     var ids = Object.keys(votosDe()).filter(local);
-    envolver(bannerOscuro('person', 'Tu cuenta', 'Tú', 'Has entrado como ' + esc(u.correo) + '.') +
-      '<div class="flex flex-col rounded-lg bg-surface-container-lowest shadow-md p-space-md gap-space-md"><div class="flex items-center gap-2"><div class="w-10 h-10 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center">' + ic('how_to_vote', 'text-[20px]', true) + '</div>' +
-      '<div><h4 class="font-label-prominent text-label-prominent text-on-surface">Tus votos</h4><span class="font-label-micro text-label-micro text-on-surface-variant">Toca un sitio para cambiar tu voto</span></div></div>' +
-      '<div class="flex flex-col gap-space-xs">' + (ids.length ? ids.map(function (id) { return filaSitio(local(id)).replace('#/local/', '#/votar/'); }).join('') : '<p class="p-2.5 rounded-DEFAULT bg-surface-container-low font-body-sm text-body-sm text-on-surface-variant">Todavía no has votado ningún sitio.</p>') + '</div></div>' +
+    envolver(cabeceraSeccion('Tú') + '<p class="font-body-lg text-body-lg text-on-surface px-1 break-words -mt-space-sm">' + esc(u.correo) + '</p>' +
+      bloque('how_to_vote', 'Tus votos', ids.length ? ids.map(function (id) { return filaSitio(local(id)).replace('#/local/', '#/votar/'); }).join('') : vacio('Ninguno.')) +
       bloqueGuardados +
-      (leer('bloqueados', []).length ? '<button type="button" class="font-label-prominent text-label-prominent text-secondary underline self-center" id="desbloquear">Volver a ver a las personas bloqueadas (' + leer('bloqueados', []).length + ')</button>' : '') +
-      '<button type="button" class="w-full h-12 rounded-full bg-surface-container-high text-on-surface font-label-prominent text-label-prominent flex items-center justify-center gap-2 active:scale-95 transition-all" id="salir">' + ic('logout', 'text-[20px] text-secondary') + 'Cerrar sesión</button>' +
-      '<button type="button" class="font-label-prominent text-label-prominent text-error underline self-center" id="borrarCuenta">Borrar mi cuenta y mis votos</button>');
+      (leer('bloqueados', []).length ? '<button type="button" class="min-h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center gap-2 px-4 active:scale-95 transition-all" id="desbloquear">Ver a las personas bloqueadas (' + leer('bloqueados', []).length + ')</button>' : '') +
+      '<button type="button" class="min-h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center gap-2 px-4 active:scale-95 transition-all" id="salir">' + ic('logout', 'text-[24px]') + 'Salir</button>' +
+      '<button type="button" class="min-h-14 rounded-full text-error font-body-lg text-body-lg font-bold underline" id="borrarCuenta">Borrar mi cuenta y mis votos</button>');
     if (document.getElementById('desbloquear')) document.getElementById('desbloquear').onclick = function () { borrar('bloqueados'); tostada('Desbloqueadas.'); P.tu(); };
     document.getElementById('salir').onclick = async function () { await sb.auth.signOut(); await cargarYo(); tostada('Sesión cerrada.'); P.tu(); };
     document.getElementById('borrarCuenta').onclick = async function () {
@@ -964,7 +951,7 @@
       ['fingerprint', 'bg-secondary-fixed text-on-secondary-fixed', 'Votos falsos', 'Una cuenta solo puede votar una vez cada sitio, y hay un tope de sitios nuevos al día. Vigilamos los votos raros —muchas cuentas nuevas votando el mismo sitio de golpe— y los que sean de mentira no cuentan.'],
       ['forum', 'bg-surface-container-highest text-on-surface', 'Comentarios', 'Se publican al momento. Quitamos los que insultan, señalan a trabajadores con nombre o no tienen que ver con el sitio. Cualquiera puede denunciar un comentario y lo revisamos en menos de 24 horas; con tres denuncias se retira solo hasta que lo miremos. Y si alguien te molesta, puedes bloquearlo y no volverás a ver lo que escribe.']
     ];
-    vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile pt-space-md pb-8 gap-space-md animate-screen-enter">' + cabeceraSeccion('Sin letra pequeña', 'Cómo funciona', '') +
+    vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile pt-space-md pb-8 gap-space-md animate-screen-enter">' + cabeceraSeccion('Cómo funciona') +
       p.map(function (x) {
         return '<div class="p-space-lg rounded-2xl bg-surface-container-low shadow-sm flex flex-col gap-space-xs"><div class="w-10 h-10 rounded-xl ' + x[1] + ' flex items-center justify-center">' + ic(x[0], 'text-body-lg font-bold') + '</div>' +
           '<h3 class="font-label-prominent text-headline-md text-on-surface mt-1">' + x[2] + '</h3><p class="font-body-md text-body-md text-on-surface-variant">' + x[3] + '</p></div>';
@@ -975,7 +962,7 @@
 
   P.noExiste = function () {
     seccion('Salimos');
-    vista.innerHTML = '<div class="px-gutter pt-space-lg"><div class="rounded-lg bg-surface-container-lowest p-space-lg shadow-md text-center font-body-md text-body-md text-on-surface-variant">Este sitio no existe o ya no está.<br><a class="font-label-prominent text-label-prominent text-primary" href="#/explorar">Volver a explorar</a></div></div>';
+    vista.innerHTML = '<div class="px-gutter pt-space-lg"><div class="rounded-lg bg-surface-container-lowest p-space-lg shadow-md text-center font-body-lg text-body-lg text-on-surface">Este sitio ya no está.<br><a class="mt-space-md min-h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center gap-2 px-4 active:scale-95 transition-all" href="#/explorar">Volver</a></div></div>';
   };
 
   /* ───────── destino: isla, provincia o ciudad ───────── */
@@ -1065,42 +1052,38 @@
         precisa ? { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 } : { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 });
     });
   }
-  var filtroCerca = '';
   P.cerca = async function () {
     seccion('Cerca de mí');
     var cab = cabeceraSeccion('Cerca de ti');
     if (!POS) {
       vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' + cab +
-        '<p class="p-space-md rounded-lg bg-surface-container-lowest shadow-md font-body-md text-body-md text-on-surface-variant" aria-busy="true">Buscando dónde estás…</p></div>';
+        '<p class="p-space-md rounded-lg bg-surface-container-lowest shadow-md font-body-lg text-body-lg text-on-surface" aria-busy="true">Buscando…</p></div>';
       try { POS = await pedirPosicion(); }
       catch (e) {
         if (location.hash !== '#/cerca') return;
-        var txt = e && e.code === 1 ? 'No nos has dado permiso para saber dónde estás. Puedes darlo en los ajustes del navegador o del móvil, o buscar por zona.'
-          : 'No hemos podido saber dónde estás. Mira que tengas la ubicación encendida y vuelve a probar, o busca por zona.';
+        var txt = e && e.code === 1 ? 'Sin permiso de ubicación. Actívalo en los ajustes del móvil.' : 'No te encontramos. Enciende la ubicación.';
         vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' + cab +
-          '<div class="p-space-md rounded-lg bg-surface-container-lowest shadow-md flex flex-col gap-space-sm"><p class="font-body-md text-body-md text-on-surface">' + txt + '</p>' +
-          '<div class="flex flex-wrap gap-space-xs"><button type="button" class="' + BOTON + '" id="otra-vez">' + ic('refresh', 'text-[20px]') + ' Volver a probar</button>' +
-          '<a class="font-label-prominent text-label-prominent text-primary flex items-center gap-0.5 px-2" href="#/zonas">Buscar por zona ' + ic('chevron_right', 'text-[16px]') + '</a></div></div></div>';
+          '<div class="p-space-md rounded-lg bg-surface-container-lowest shadow-md flex flex-col gap-space-sm"><p class="font-body-lg text-body-lg text-on-surface">' + txt + '</p>' +
+          '<div class="flex flex-col gap-space-xs"><button type="button" class="' + BOTON + '" id="otra-vez">' + ic('refresh', 'text-[26px]') + ' Probar otra vez</button>' +
+          '<a class="min-h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center gap-2 px-4 active:scale-95 transition-all" href="#/zonas">Ver zonas</a></div></div></div>';
         document.getElementById('otra-vez').onclick = P.cerca;
         return;
       }
       if (location.hash !== '#/cerca') return;
       colocarDestino();
     }
-    var lista = TODOS.filter(function (l) { return l.lat != null && (!filtroCerca || l.tipo === filtroCerca || l.tipo2 === filtroCerca || l.tipo3 === filtroCerca); })
+    var lista = sinZona().filter(function (l) { return l.lat != null; })
       .map(function (l) { return { l: l, km: kmEntre(POS.lat, POS.lng, l.lat, l.lng) }; })
       .sort(function (a, b) { return a.km - b.km; }).slice(0, 25);
-    var chip = function (id, icono, txt) { var on = filtroCerca === id; return '<button type="button" class="category-chip flex items-center gap-1.5 px-3.5 py-2 rounded-full shadow-sm active:scale-95 transition-all flex-shrink-0 ' + (on ? CHIP_ON : CHIP_OFF) + '" data-tipo="' + id + '" aria-pressed="' + on + '">' + ic(icono, 'text-[18px]') + '<span class="font-label-prominent text-label-prominent whitespace-nowrap">' + txt + '</span></button>'; };
     vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' + cab +
-      '<section class="flex items-center gap-space-xs overflow-x-auto no-scrollbar -mx-gutter-mobile px-gutter-mobile sm:mx-0 sm:px-0 py-1">' +
-      chip('', 'apps', 'Todo') + S.TIPOS.map(function (t) { return chip(t.id, t.icono, t.plural); }).join('') + '</section>' +
-      (lista.length && lista[0].km > 60 ? '<p class="p-space-md rounded-lg bg-surface-container-high font-body-sm text-body-sm text-on-surface">Todavía no tenemos sitios cerca de donde estás. Estos son los más cercanos.</p>' : '') +
+      botonesFiltro(['tipo', 'edad', 'precio']) +
+      (lista.length && lista[0].km > 60 ? '<p class="p-space-md rounded-lg bg-surface-container-high font-body-lg text-body-lg text-on-surface">No hay nada cerca. Estos son los más próximos.</p>' : '') +
       '<div class="flex flex-col gap-space-xs">' + (lista.length ? lista.map(function (x) {
         return filaSitio(x.l).replace(/<span class="flex items-center gap-1 px-2\.5[^]*?<\/span><\/a>$/,
-          '<span class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-container text-on-primary-container font-label-badge text-label-badge flex-shrink-0 ml-2">' + ic('near_me', 'text-[14px]') + distancia(x.km) + '</span></a>');
-      }).join('') : '<p class="p-2.5 rounded-DEFAULT bg-surface-container-low font-body-sm text-body-sm text-on-surface-variant">No hay sitios de este tipo todavía.</p>') + '</div>' +
-      '<button type="button" class="font-label-prominent text-label-prominent text-primary flex items-center justify-center gap-1" id="recolocar">' + ic('my_location', 'text-[16px]') + ' Me he movido: actualizar</button></div>';
-    vista.querySelectorAll('[data-tipo]').forEach(function (b) { b.onclick = function () { filtroCerca = b.dataset.tipo; P.cerca(); }; });
+          '<span class="px-3 py-1.5 rounded-full bg-primary-container text-on-primary-container font-body-md text-body-md font-bold flex-shrink-0 ml-2">' + distancia(x.km) + '</span></a>');
+      }).join('') : '<p class="p-space-md rounded-lg bg-surface-container-low font-body-lg text-body-lg text-on-surface">No hay ninguno.</p>') + '</div>' +
+      '<button type="button" class="min-h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center gap-2 px-4 active:scale-95 transition-all" id="recolocar">' + ic('my_location', 'text-[24px]') + ' Actualizar</button></div>';
+    activarFiltros(P.cerca);
     document.getElementById('recolocar').onclick = function () { POS = null; P.cerca(); };
   };
 
