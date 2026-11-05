@@ -83,15 +83,15 @@
     return { nota: nota, votos: l.votos, crit: crit, rapidas: l.rapidas || {}, mio: votosDe()[l.id] };
   }
 
-  /* El tramo de edad que más han marcado quienes votan (con 3 respuestas como mínimo). */
+  /* Los tramos de edad que más han marcado quienes votan (con 3 respuestas como mínimo). Si empatan, salen todos. */
   function mayoria(c) {
-    var d = c.rapidas.edad || {}, mejor = null, tot = 0;
-    Object.keys(d).forEach(function (k) { tot += d[k]; if (!mejor || d[k] > d[mejor]) mejor = k; });
-    return tot >= 3 ? S.EDADES.filter(function (e) { return e.id === mejor; })[0] : null;
+    var d = c.rapidas.edad || {}, max = 0, tot = 0;
+    Object.keys(d).forEach(function (k) { tot += d[k]; if (d[k] > max) max = d[k]; });
+    return tot >= 3 ? S.EDADES.filter(function (e) { return d[e.id] === max; }) : [];
   }
-  /* Un local encaja con un tramo buscado si su mayoría cae dentro: buscar 25–50 trae también los de 25–35. */
+  /* Un local encaja con un tramo buscado si una de sus mayorías cae dentro: buscar 25–50 trae también los de 25–35. */
   function encajaEdad(m, buscados) {
-    return buscados.some(function (id) { var b = S.EDADES.filter(function (e) { return e.id === id; })[0]; return m && m.min >= b.min && m.max <= b.max; });
+    return buscados.some(function (id) { var b = S.EDADES.filter(function (e) { return e.id === id; })[0]; return m.some(function (x) { return x.min >= b.min && x.max <= b.max; }); });
   }
 
   /* ───────── piezas del diseño de Stitch (carpeta stitch, los code.html) ─────────
@@ -425,8 +425,12 @@
       var d = c.rapidas[r.id] || {}, tot = 0, mejor = null;
       r.opciones.forEach(function (o) { tot += d[o[0]] || 0; if (!mejor || (d[o[0]] || 0) > (d[mejor[0]] || 0)) mejor = o; });
       if (!tot) return '';
+      var empate = r.opciones.filter(function (o) { return (d[o[0]] || 0) === (d[mejor[0]] || 0); });
+      var respuesta = r.id === 'edad' && empate.length > 1
+        ? empate.map(function (o, i) { return i ? o[1].toLowerCase() : o[1]; }).join(' y ')
+        : mejor[1] + ' • ' + Math.round((d[mejor[0]] || 0) / tot * 100) + ' %';
       return '<div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface font-label-badge text-label-badge shadow-sm">' + ic(ICONO_RAPIDA[r.id], 'text-[16px] text-tertiary') +
-        '<span>' + esc(r.pregunta.replace(/[¿?]/g, '')) + ': ' + esc(mejor[1]) + ' • ' + Math.round((d[mejor[0]] || 0) / tot * 100) + ' %</span></div>';
+        '<span>' + esc(r.pregunta.replace(/[¿?]/g, '')) + ': ' + esc(respuesta) + '</span></div>';
     }).join('');
     var etiquetas = (l.etiquetas || []).map(function (e) {
       return '<div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface font-label-badge text-label-badge shadow-sm">' + ic('check_circle', 'text-[16px] text-tertiary') + '<span>' + esc(e) + '</span></div>';
@@ -465,7 +469,7 @@
       '<div class="absolute bottom-3 left-3 right-3 text-surface-container-lowest flex items-end justify-between gap-2"><div class="min-w-0">' +
       '<span class="font-label-badge text-label-badge uppercase tracking-wider text-primary-fixed-dim">' + rotulo(l) + '</span>' +
       '<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-surface-container-lowest leading-tight">' + esc(l.nombre) + '</h2></div>' +
-      (m ? '<span class="px-2.5 py-1 rounded-full bg-surface-container-lowest/20 backdrop-blur-md font-label-micro text-label-micro text-surface-container-lowest flex-shrink-0">Gente de ' + m.nombre.replace('De ', '').toLowerCase() + '</span>' : '') +
+      (m.length ? '<span class="px-2.5 py-1 rounded-full bg-surface-container-lowest/20 backdrop-blur-md font-label-micro text-label-micro text-surface-container-lowest flex-shrink-0">Gente de ' + m.map(function (x) { return x.nombre.replace('De ', '').toLowerCase(); }).join(' y de ') + '</span>' : '') +
       '</div></div><p class="hidden pt-1.5 font-label-micro text-label-micro text-on-surface-variant text-right" id="credito-google"></p></div>' +
       '<div class="px-gutter pb-space-md flex items-center gap-space-md">' + mapaIsla(l, 'w-20 h-[88px] flex-shrink-0') + '<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1.5">' + ic('explore', 'text-[18px] text-secondary flex-shrink-0') +
       '<span>' + nombreTipos(l) + ' • ' + esc(l.municipio) + '</span></p></div>' +
