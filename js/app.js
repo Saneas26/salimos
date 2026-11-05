@@ -213,9 +213,11 @@
     return '<a class="w-full h-16 rounded-full bg-primary-container text-on-primary-container font-headline-md text-headline-md shadow-md active:scale-95 transition-all flex items-center justify-center gap-2" href="#/recomendar">' +
       ic('add_location_alt', 'text-[28px] animate-bounce') + '<span>Añadir un sitio</span></a>';
   }
-  /* Sin nada que enseñar todavía: lo dice en una línea y lleva a votar. */
-  function listasVacias() {
+  /* Sin ranking todavía: lo dice en una línea, enseña los sitios que hay y lleva a votar. */
+  function listasVacias(base) {
+    var hay = porVotos(base || []).slice(0, 10);
     return '<p class="p-space-md rounded-lg bg-surface-container-low font-body-lg text-body-lg text-on-surface">Faltan votos: cada sitio entra con ' + S.MIN_VOTOS_RANKING + '.</p>' +
+      (hay.length ? '<div class="flex flex-col gap-space-xs">' + hay.map(filaSitio).join('') + '</div>' : '') +
       '<a class="w-full h-16 rounded-full bg-secondary text-on-secondary font-headline-md text-headline-md shadow-md active:scale-95 transition-all flex items-center justify-center gap-2" href="#/votar">' + ic('how_to_vote', 'text-[28px]') + '<span>Votar</span></a>';
   }
 
@@ -417,7 +419,7 @@
       })).join('');
     vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' +
       cabeceraSeccion('Top Listas') + botonesFiltro(['tipo', 'zona', 'edad', 'precio']) +
-      (bloques || listasVacias()) + llamadaRecomendar() + '</div>';
+      (bloques || listasVacias(base)) + llamadaRecomendar() + '</div>';
     activarFiltros(P.top);
   };
 
