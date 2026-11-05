@@ -83,12 +83,12 @@
     return { nota: nota, votos: l.votos, crit: crit, rapidas: l.rapidas || {}, mio: votosDe()[l.id] };
   }
 
-  /* La nota del local en cada categoría cuando hay votos distintos por categoría: lo que no cambia vale lo de la nota general. */
+  /* La nota del local en cada categoría votada aparte: lo que nadie ha votado en ella vale lo de la nota general. */
   function notasPorCategoria(l, c) {
     var pc = l.por_categoria || {};
     var cats = [l.tipo, l.tipo3, l.tipo2].filter(function (t) { return t && (t === l.tipo || pc[t]); });
     if (cats.length < 2) return [];
-    var cambian = S.criteriosDe(l.tipo, l.tipo2).filter(function (cr) { return cats.some(function (t) { return pc[t] && pc[t][cr.id]; }); });
+    var cambian = S.criteriosDe(l.tipo, l.tipo2).filter(function (cr) { return cats.some(function (t) { var o = pc[t] && pc[t][cr.id]; return o && o.suma / o.n !== c.crit[cr.id].media; }); });
     return cats.map(function (t) {
       var valor = function (cr) { var o = pc[t] && pc[t][cr.id]; return o ? o.suma / o.n : c.crit[cr.id].media; };
       var medias = S.criteriosDe(l.tipo, l.tipo2).map(valor).filter(function (v) { return v != null; });
@@ -635,11 +635,17 @@
     if (!usuario() || !YO.perfil) { guardar('vuelta', '#/votar/' + id); location.hash = '#/entrar'; return; }
     seccion('Votar');
     var previo = votosDe()[id] || { crit: {}, rapidas: {} };
-    var voto = { crit: Object.assign({}, previo.crit), rapidas: Object.assign({}, previo.rapidas), comentario: previo.comentario };
+    var voto = { crit: Object.assign({}, previo.crit), rapidas: Object.assign({}, previo.rapidas), comentario: previo.comentario, pc: JSON.parse(JSON.stringify(previo.por_categoria || {})) };
     var crits = S.criteriosDe(l.tipo, l.tipo2);
+    /* Cada categoría del local se vota aparte. La primera es la nota general; las otras parten de ella y guardan solo lo que cambia. */
+    var cats = [l.tipo, l.tipo3, l.tipo2].filter(Boolean), cat = l.tipo;
     var PALABRA = ['Fatal', 'Fatal', 'Muy mal', 'Mal', 'Flojo', 'Regular', 'Aprobado', 'Bien', 'Muy bien', 'Excelente', 'Perfecto'];
 
     vista.innerHTML = '<div class="px-gutter pt-space-md pb-space-lg flex flex-col gap-space-md animate-screen-enter">' + cabeceraVotar(l) + avisoVerificado(l, previo) +
+      (cats.length > 1 ? '<div class="flex flex-col gap-space-xs"><h2 class="font-label-prominent text-label-prominent text-on-surface uppercase tracking-wider px-1">Vótalo como</h2>' +
+        '<div class="flex items-center gap-2 flex-wrap" role="group" aria-label="Categoría que votas">' + cats.map(function (t) {
+          return '<button type="button" class="' + (t === cat ? TAG_ON : TAG_OFF) + '" data-cat="' + t + '" aria-pressed="' + (t === cat) + '">' + ic(tipo(t).icono, 'text-[18px]') + '<span>' + esc(tipo(t).nombre) + '</span></button>';
+        }).join('') + '</div><p class="font-body-sm text-body-sm text-on-surface-variant px-1" id="cat-ayuda"></p></div>' : '') +
       '<div class="flex flex-col gap-space-sm"><div class="flex items-center justify-between px-1"><h2 class="font-label-prominent text-label-prominent text-on-surface uppercase tracking-wider">' + crits.length + ' cosas que votar</h2>' +
       '<span class="font-label-badge text-label-badge text-secondary font-semibold">Toca o desliza</span></div>' +
       crits.map(function (c) {
@@ -679,17 +685,30 @@
       '<a class="mt-space-lg w-full h-12 rounded-full bg-secondary text-on-secondary font-label-prominent text-label-prominent flex items-center justify-center active:scale-95 transition-all" href="#/local/' + id + '">Ver la ficha</a>' +
       '<a class="mt-space-sm w-full h-12 rounded-full bg-surface-container-high text-on-surface font-label-prominent text-label-prominent flex items-center justify-center active:scale-95 transition-all" href="#/explorar">Continuar explorando</a></div></div></div>';
 
-    function media() {
-      var k = Object.keys(voto.crit); if (!k.length) return '–';
-      return n1(k.reduce(function (a, x) { return a + voto.crit[x]; }, 0) / k.length);
+    function valor(cid) {
+      var o = cat !== l.tipo && voto.pc[cat] ? voto.pc[cat][cid] : null;
+      return o != null ? o : voto.crit[cid];
     }
-    function marcar(cid, v) {
-      if (v == null) delete voto.crit[cid]; else voto.crit[cid] = v;
+    function media(general) {
+      var vs = crits.map(function (c) { return general ? voto.crit[c.id] : valor(c.id); }).filter(function (v) { return v != null; });
+      if (!vs.length) return '–';
+      return n1(vs.reduce(function (a, b) { return a + b; }, 0) / vs.length);
+    }
+    function marcar(cid, n) {
+      if (cat === l.tipo) { if (n == null) delete voto.crit[cid]; else voto.crit[cid] = n; }
+      else {
+        voto.pc[cat] = voto.pc[cat] || {};
+        if (n == null || n === voto.crit[cid]) delete voto.pc[cat][cid]; else voto.pc[cat][cid] = n;
+      }
+      pintar(cid);
+    }
+    function pintar(cid) {
+      var v = valor(cid);
       var r = document.getElementById('r-' + cid);
       document.getElementById('o-' + cid).textContent = v == null ? '–' : v;
       document.getElementById('p-' + cid).textContent = v == null ? 'Sin votar · desliza para votar' : PALABRA[v] + ' · ' + v;
       r.setAttribute('aria-valuetext', v == null ? 'Sin votar' : v + ', ' + PALABRA[v]);
-      if (v == null) r.value = 5;
+      r.value = v == null ? 5 : v;
       r.closest('.criteria-card').classList.toggle('sin-votar', v == null);
       document.getElementById('global-live-score').textContent = media();
       revisar();
@@ -699,7 +718,14 @@
       document.getElementById('submit-vote-btn').disabled = falta > 0;
       document.getElementById('falta').textContent = falta ? 'Vota al menos 3 cosas para publicar (te ' + (falta === 1 ? 'falta 1' : 'faltan ' + falta) + ').' : '';
     }
-    crits.forEach(function (c) { marcar(c.id, voto.crit[c.id] == null ? null : voto.crit[c.id]); });
+    function pintarCategoria() {
+      vista.querySelectorAll('[data-cat]').forEach(function (b) { var a = b.dataset.cat === cat; b.className = a ? TAG_ON : TAG_OFF; b.setAttribute('aria-pressed', a); });
+      var ayuda = document.getElementById('cat-ayuda');
+      if (ayuda) ayuda.textContent = cat === l.tipo ? 'Esta es tu nota general.' : 'Empieza con tu nota general. Mueve lo que sea distinto como ' + tipo(cat).nombre.toLowerCase() + '.';
+      crits.forEach(function (c) { pintar(c.id); });
+    }
+    vista.querySelectorAll('[data-cat]').forEach(function (b) { b.onclick = function () { cat = b.dataset.cat; pintarCategoria(); }; });
+    pintarCategoria();
     vista.querySelectorAll('input[type=range]').forEach(function (r) { r.oninput = function () { marcar(r.id.slice(2), +r.value); }; });
     vista.querySelectorAll('.no-se').forEach(function (b) { b.onclick = function () { marcar(b.dataset.c, null); }; });
     vista.querySelectorAll('[data-r]').forEach(function (b) {
@@ -714,8 +740,17 @@
       var b = this, antes = b.innerHTML; b.disabled = true;
       b.innerHTML = ic('sync', 'text-[24px] animate-spin') + '<span>Publicando…</span>';
       var r = await sb.rpc('salimos_votar', { p_local: id, p_crit: voto.crit, p_rapidas: voto.rapidas, p_comentario: document.getElementById('review-opinion').value.trim() });
+      if (!r.error && cats.length > 1) {
+        /* Lo que acabe igual que la nota general no se guarda. */
+        var pc = {};
+        cats.slice(1).forEach(function (t) {
+          var d = {}; crits.forEach(function (c) { var o = voto.pc[t] && voto.pc[t][c.id]; if (o != null && o !== voto.crit[c.id]) d[c.id] = o; });
+          if (Object.keys(d).length) pc[t] = d;
+        });
+        r = await sb.rpc('salimos_votar_categorias', { p_local: id, p_por_categoria: pc });
+      }
       if (r.error) { b.disabled = false; b.innerHTML = antes; document.getElementById('falta').textContent = textoError(r.error); return; }
-      document.getElementById('modal-final-score').textContent = media();
+      document.getElementById('modal-final-score').textContent = media(true);
       await Promise.all([cargarLocales(), cargarYo()]);
       document.getElementById('vote-modal-success').classList.remove('hidden');
     };
