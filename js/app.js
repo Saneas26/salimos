@@ -476,7 +476,7 @@
       if (!tot) return '';
       var empate = r.opciones.filter(function (o) { return (d[o[0]] || 0) === (d[mejor[0]] || 0); });
       var respuesta = r.id === 'edad' && empate.length > 1
-        ? empate.map(function (o, i) { return i ? o[1].toLowerCase() : o[1]; }).join(' y ')
+        ? empate.map(function (o, i) { return i ? o[1].toLowerCase() : o[1]; }).join(', ').replace(/, ([^,]*)$/, ' y $1')
         : mejor[1] + ' • ' + Math.round((d[mejor[0]] || 0) / tot * 100) + ' %';
       return '<div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface font-label-badge text-label-badge shadow-sm">' + ic(ICONO_RAPIDA[r.id], 'text-[16px] text-tertiary') +
         '<span>' + esc(r.pregunta.replace(/[¿?]/g, '')) + ': ' + esc(respuesta) + '</span></div>';
@@ -517,7 +517,7 @@
       '<div class="absolute bottom-3 left-3 right-3 text-surface-container-lowest flex items-end justify-between gap-2"><div class="min-w-0">' +
       '<span class="font-label-badge text-label-badge uppercase tracking-wider text-primary-fixed-dim">' + rotulo(l) + '</span>' +
       '<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-surface-container-lowest leading-tight">' + esc(l.nombre) + '</h2></div>' +
-      (m.length ? '<span class="px-2.5 py-1 rounded-full bg-surface-container-lowest/20 backdrop-blur-md font-label-micro text-label-micro text-surface-container-lowest flex-shrink-0">Gente de ' + m.map(function (x) { return x.nombre.replace('De ', '').toLowerCase(); }).join(' y de ') + '</span>' : '') +
+      (m.length ? '<span class="px-2.5 py-1 rounded-full bg-surface-container-lowest/20 backdrop-blur-md font-label-micro text-label-micro text-surface-container-lowest flex-shrink-0">Gente de ' + m.map(function (x) { return x.nombre.replace('De ', '').toLowerCase(); }).join(', de ').replace(/, de ([^,]*)$/, ' y de $1') + '</span>' : '') +
       '</div></div><p class="hidden pt-1.5 font-label-micro text-label-micro text-on-surface-variant text-right" id="credito-google"></p></div>' +
       '<div class="px-gutter pb-space-md flex items-center gap-space-md">' + mapaIsla(l, 'w-20 h-[88px] flex-shrink-0') + '<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1.5">' + ic('explore', 'text-[18px] text-secondary flex-shrink-0') +
       '<span>' + nombreTipos(l) + ' • ' + esc(l.municipio) + '</span></p></div>' +
