@@ -83,6 +83,20 @@
     return { nota: nota, votos: l.votos, crit: crit, rapidas: l.rapidas || {}, mio: votosDe()[l.id] };
   }
 
+  /* La nota del local en cada categoría cuando hay votos distintos por categoría: lo que no cambia vale lo de la nota general. */
+  function notasPorCategoria(l, c) {
+    var pc = l.por_categoria || {};
+    var cats = [l.tipo, l.tipo3, l.tipo2].filter(function (t) { return t && (t === l.tipo || pc[t]); });
+    if (cats.length < 2) return [];
+    var cambian = S.criteriosDe(l.tipo, l.tipo2).filter(function (cr) { return cats.some(function (t) { return pc[t] && pc[t][cr.id]; }); });
+    return cats.map(function (t) {
+      var valor = function (cr) { var o = pc[t] && pc[t][cr.id]; return o ? o.suma / o.n : c.crit[cr.id].media; };
+      var medias = S.criteriosDe(l.tipo, l.tipo2).map(valor).filter(function (v) { return v != null; });
+      return { nombre: tipo(t).nombre, icono: tipo(t).icono, nota: medias.reduce(function (a, b) { return a + b; }, 0) / medias.length,
+        detalle: cambian.map(function (cr) { return cr.nombre + ' ' + n1(valor(cr)); }).join(' • ') };
+    });
+  }
+
   /* Los tramos de edad que más han marcado quienes votan (con 3 respuestas como mínimo). Si empatan, salen todos. */
   function mayoria(c) {
     var d = c.rapidas.edad || {}, max = 0, tot = 0;
@@ -407,7 +421,7 @@
   P.local = function (id) {
     var l = local(id); if (!l) return P.noExiste();
     seccion('Detalle Local');
-    var c = cifras(l), m = mayoria(c);
+    var c = cifras(l), m = mayoria(c), notasCat = notasPorCategoria(l, c);
     var mapa = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(l.nombre + ', ' + (l.direccion || l.barrio || '') + ', ' + l.municipio + ', ' + l.destino);
 
     var criterios = S.criteriosDe(l.tipo, l.tipo2).map(function (cr, i) {
@@ -499,6 +513,12 @@
       '<div class="flex flex-wrap gap-space-xs mt-space-xs">' + (veredicto || '<div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface font-label-badge text-label-badge shadow-sm">' + ic('how_to_vote', 'text-[16px] text-primary-container') + '<span>Todavía sin respuestas: sé el primero</span></div>') + '</div></div>' +
       '<div class="px-gutter pb-space-lg"><div class="flex items-center justify-between mb-space-sm"><h3 class="font-headline-md text-headline-md text-on-surface">Evaluación Multicriterio</h3><span class="font-label-badge text-label-badge text-on-surface-variant">' + S.criteriosDe(l.tipo, l.tipo2).length + ' Dimensiones</span></div>' +
       '<div class="flex flex-col gap-space-sm">' + criterios + '</div></div>' +
+      (notasCat.length ? '<div class="px-gutter pb-space-lg"><h3 class="font-headline-md text-headline-md text-on-surface mb-space-sm">Nota por categoría</h3><div class="flex flex-col gap-space-xs">' +
+        notasCat.map(function (n) {
+          return '<div class="flex items-center justify-between gap-3 bg-surface-container p-space-md rounded-lg"><div class="flex items-center gap-2 min-w-0">' + ic(n.icono, 'text-[22px] text-secondary') +
+            '<div class="flex flex-col min-w-0"><span class="font-label-prominent text-label-prominent text-on-surface">' + esc(n.nombre) + '</span><span class="font-body-sm text-body-sm text-on-surface-variant">' + esc(n.detalle) + '</span></div></div>' +
+            '<span class="font-score-display text-score-display text-primary flex-shrink-0">' + n1(n.nota) + '</span></div>';
+        }).join('') + '</div></div>' : '') +
       (datos ? '<div class="px-gutter pb-space-lg"><div class="bg-surface-container p-space-md rounded-lg"><div class="flex items-center gap-2 mb-2">' + ic('storefront', 'text-[18px] text-secondary') +
         '<h4 class="font-label-prominent text-label-prominent text-on-surface">Cómo encontrarlo</h4></div><div class="flex flex-col gap-2">' + datos + '</div></div></div>' : '') +
       (l.comentarios ? '<div class="px-gutter pb-space-xl" id="comentarios" aria-busy="true"><div class="flex items-center justify-between mb-space-sm"><h3 class="font-headline-md text-headline-md text-on-surface">Últimas Evaluaciones</h3>' +
