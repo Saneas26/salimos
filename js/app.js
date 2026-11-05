@@ -72,10 +72,10 @@
   }
 
   /* Cifras de un local tal como las da el servidor (el voto propio ya va dentro). */
-  function cifras(l) {
-    var crit = {};
+  function cifras(l, cat) {
+    var crit = {}, pc = cat && l.por_categoria ? l.por_categoria[cat] : null;
     S.criteriosDe(l.tipo, l.tipo2).forEach(function (c) {
-      var b = l.crit[c.id] || { suma: 0, n: 0 };
+      var b = (pc && pc[c.id]) || l.crit[c.id] || { suma: 0, n: 0 };
       crit[c.id] = { media: b.n ? b.suma / b.n : null, n: b.n };
     });
     var medias = Object.keys(crit).map(function (k) { return crit[k].media; }).filter(function (m) { return m != null; });
@@ -157,39 +157,35 @@
   }
 
   function tarjetaCarrusel(l) {
-    var c = cifras(l), puntua = c.nota != null;
-    return '<a href="#/local/' + l.id + '" class="flex-shrink-0 w-[290px] rounded-lg bg-surface-container-lowest shadow-md overflow-hidden flex flex-col transition-transform duration-200 active:scale-[0.99]">' +
+    var c = cifras(l, filtro.tipo), puntua = c.nota != null;
+    return '<a href="#/local/' + l.id + '" class="flex-shrink-0 w-[300px] rounded-lg bg-surface-container-lowest shadow-md overflow-hidden flex flex-col transition-transform duration-200 active:scale-[0.99]">' +
       lienzo(l, 'h-44') +
-      '<div class="absolute top-2.5 left-2.5 flex items-center gap-1 px-2.5 py-1 rounded-full bg-on-surface/75 backdrop-blur-md text-surface-container-lowest font-label-badge text-label-badge"><span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed"></span><span>100% Sin Patrocinio</span></div>' +
       '<div class="absolute bottom-2.5 left-2.5 rounded bg-surface-container-lowest/90 p-1 shadow-md">' + mapaIsla(l, 'block w-12 h-[52px]') + '</div>' +
       '<div class="absolute bottom-2.5 right-2.5 flex items-center gap-1 px-3 py-1 rounded-full bg-primary-container text-on-primary-container shadow-md">' +
       (puntua ? '<span class="font-score-display text-score-display leading-none">' + n1(c.nota) + '</span><span class="font-label-micro text-label-micro font-bold opacity-80">/10</span>'
               : '<span class="font-label-prominent text-label-prominent leading-none py-1">Sin votos</span>') + '</div></div>' +
       '<div class="p-space-md flex flex-col gap-space-xs">' +
-      '<div class="flex items-center justify-between gap-2"><span class="font-label-micro text-label-micro text-secondary font-bold uppercase tracking-wider truncate">' + rotulo(l) + '</span>' +
-      '<span class="font-label-micro text-label-micro text-on-surface-variant flex items-center gap-0.5 flex-shrink-0">' + ic('how_to_vote', 'text-[13px] text-tertiary') + ' ' + c.votos + (c.votos === 1 ? ' voto' : ' votos') + '</span></div>' +
       '<h4 class="font-headline-md text-headline-md text-on-surface leading-tight">' + esc(l.nombre) + '</h4>' +
-      '<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1">' + nombreTipos(l) + (l.precio ? ' • ' + euros(l) : '') + '</p>' +
-      '<div class="grid grid-cols-2 gap-1.5 pt-2">' + pildoras(l, c) + '</div></div></a>';
+      '<p class="font-body-md text-body-md text-on-surface-variant line-clamp-1">' + rotulo(l) + (l.precio ? ' • ' + euros(l) : '') + '</p></div></a>';
   }
 
   /* Fila de ranking: número grande, nombre y nota con estrella. */
   var COLOR_PUESTO = ['text-primary', 'text-secondary', 'text-on-surface-variant'];
   function filaRanking(l, i, valor, n, colorNota) {
-    return '<a href="#/local/' + l.id + '" class="flex items-center justify-between p-3 rounded-DEFAULT bg-surface-container-low hover:bg-surface-container transition-colors">' +
+    return '<a href="#/local/' + l.id + '" class="flex items-center justify-between min-h-[68px] p-3 rounded-DEFAULT bg-surface-container-low hover:bg-surface-container transition-colors">' +
       '<div class="flex items-center gap-3 min-w-0"><span class="font-score-display text-score-display ' + (COLOR_PUESTO[i] || 'text-on-surface-variant') + ' flex-shrink-0 w-6 text-center">' + (i + 1) + '</span>' +
-      '<div class="flex flex-col min-w-0 gap-0.5"><span class="font-label-prominent text-[19px] leading-[24px] font-bold text-on-surface truncate">' + esc(l.nombre) + '</span>' +
-      '<span class="font-body-md text-[16px] leading-[21px] text-on-surface-variant truncate">' + nombreTipos(l) + ' • ' + rotulo(l) + '</span></div></div>' +
+      '<div class="flex flex-col min-w-0 gap-0.5"><span class="font-headline-md text-[21px] leading-[26px] font-bold text-on-surface truncate">' + esc(l.nombre) + '</span>' +
+      '<span class="font-body-md text-body-md text-on-surface-variant truncate">' + rotulo(l) + '</span></div></div>' +
       '<div class="flex flex-col items-end flex-shrink-0 pl-2"><div class="flex items-center gap-1 ' + (colorNota || 'text-tertiary') + '"><span class="font-headline-md text-headline-md leading-none">' + n1(valor) + '</span>' + ic('star', 'text-[16px]', true) + '</div>' +
       '<span class="font-label-micro text-label-micro text-on-surface-variant">' + n + (n === 1 ? ' voto' : ' votos') + '</span></div></a>';
   }
   /* Fila de un sitio que aún no puntúa: el icono de su tipo donde iría el puesto. */
   function filaSitio(l) {
     var c = cifras(l);
-    return '<a href="#/local/' + l.id + '" class="flex items-center justify-between p-3 rounded-DEFAULT bg-surface-container-low hover:bg-surface-container transition-colors">' +
+    return '<a href="#/local/' + l.id + '" class="flex items-center justify-between min-h-[68px] p-3 rounded-DEFAULT bg-surface-container-low hover:bg-surface-container transition-colors">' +
       '<div class="flex items-center gap-3 min-w-0"><span class="w-11 flex justify-center flex-shrink-0">' + (mapaIsla(l, 'w-11 h-12') || ic(tipo(l.tipo).icono, 'text-[22px] text-secondary')) + '</span>' +
-      '<div class="flex flex-col min-w-0 gap-0.5"><span class="font-label-prominent text-[19px] leading-[24px] font-bold text-on-surface truncate">' + esc(l.nombre) + '</span>' +
-      '<span class="font-body-md text-[16px] leading-[21px] text-on-surface-variant truncate">' + nombreTipos(l) + ' • ' + rotulo(l) + '</span></div></div>' +
+      '<div class="flex flex-col min-w-0 gap-0.5"><span class="font-headline-md text-[21px] leading-[26px] font-bold text-on-surface truncate">' + esc(l.nombre) + '</span>' +
+      '<span class="font-body-md text-body-md text-on-surface-variant truncate">' + rotulo(l) + '</span></div></div>' +
       '<span class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-fixed/50 text-on-secondary-fixed font-label-badge text-label-badge flex-shrink-0 ml-2">' +
       (c.votos ? c.votos + (c.votos === 1 ? ' voto' : ' votos') : 'Sin votos') + '</span></a>';
   }
@@ -198,34 +194,95 @@
   var CIRCULO = { tertiary: ['bg-tertiary-fixed text-on-tertiary-fixed', 'bg-tertiary-fixed/30 text-on-tertiary-fixed', 'text-tertiary'],
                   secondary: ['bg-secondary-fixed text-on-secondary-fixed', 'bg-secondary-fixed/50 text-on-secondary-fixed', 'text-primary'],
                   neutro: ['bg-surface-container-highest text-on-surface', 'bg-surface-container text-on-surface-variant', 'text-secondary'] };
-  function bloqueRanking(icono, tono, titulo, sub, lista, criterio) {
+  function bloqueRanking(icono, tono, titulo, lista, criterio) {
     var t = CIRCULO[tono];
     var filas = lista.slice(0, 3).map(function (l, i) {
-      var c = cifras(l), v = criterio ? c.crit[criterio].media : c.nota, n = criterio ? c.crit[criterio].n : c.votos;
+      var c = cifras(l, filtro.tipo), v = criterio ? c.crit[criterio].media : c.nota, n = criterio ? c.crit[criterio].n : c.votos;
       return filaRanking(l, i, v, n, t[2]);
     }).join('');
+    if (!filas) return '';
     return '<div class="flex flex-col rounded-lg bg-surface-container-lowest shadow-md p-space-md gap-space-md">' +
-      '<div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2 min-w-0"><div class="w-10 h-10 rounded-full ' + t[0] + ' flex items-center justify-center flex-shrink-0">' + ic(icono, 'text-[20px]', true) + '</div>' +
-      '<div class="min-w-0"><h4 class="font-label-prominent text-label-prominent text-on-surface">' + titulo + '</h4><span class="font-label-micro text-label-micro text-on-surface-variant">' + sub + '</span></div></div>' +
-      '<span class="px-2 py-0.5 rounded-full ' + t[1] + ' font-label-badge text-label-badge flex-shrink-0">Top 3</span></div>' +
-      '<div class="flex flex-col gap-space-xs">' + (filas || '<p class="p-2.5 rounded-DEFAULT bg-surface-container-low font-body-sm text-body-sm text-on-surface-variant">Todavía ningún sitio llega a ' + S.MIN_VOTOS_RANKING + ' votos en esto. Si has ido a alguno, vota.</p>') + '</div></div>';
+      '<div class="flex items-center gap-2 min-w-0"><div class="w-11 h-11 rounded-full ' + t[0] + ' flex items-center justify-center flex-shrink-0">' + ic(icono, 'text-[24px]', true) + '</div>' +
+      '<h4 class="font-headline-md text-headline-md text-on-surface">' + titulo + '</h4></div>' +
+      '<div class="flex flex-col gap-space-xs">' + filas + '</div></div>';
   }
-  function cabeceraSeccion(antetitulo, titulo, sub) {
-    return '<div class="flex flex-col gap-0.5 px-1"><span class="font-label-micro text-label-micro text-tertiary uppercase tracking-wider font-bold">' + antetitulo + '</span>' +
-      '<h3 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">' + titulo + '</h3>' +
-      (sub ? '<p class="font-body-sm text-body-sm text-on-surface-variant">' + sub + '</p>' : '') + '</div>';
+  function cabeceraSeccion(titulo) {
+    return '<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface px-1">' + titulo + '</h1>';
   }
   function llamadaRecomendar() {
-    return '<section class="rounded-lg bg-surface-container-high p-space-lg flex flex-col items-center text-center gap-space-sm relative overflow-hidden shadow-sm">' +
-      '<div class="w-14 h-14 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shadow-md animate-bounce">' + ic('add_location_alt', 'text-[28px]') + '</div>' +
-      '<div class="flex flex-col gap-1 max-w-xs"><h3 class="font-headline-md text-headline-md text-on-surface">¿Conoces un sitio auténtico?</h3>' +
-      '<p class="font-body-sm text-body-sm text-on-surface-variant">Recomiéndalo. Darlo de alta es gratis y ningún local puede pagar por entrar.</p></div>' +
-      '<a class="mt-1 w-full max-w-xs py-3 px-6 rounded-full bg-primary-container text-on-primary-container font-label-prominent text-label-prominent shadow-md hover:brightness-105 active:scale-95 transition-all flex items-center justify-center gap-2" href="#/recomendar">' +
-      ic('add_circle', 'text-[18px]') + '<span>Recomendar un sitio</span></a></section>';
+    return '<a class="w-full h-16 rounded-full bg-primary-container text-on-primary-container font-headline-md text-headline-md shadow-md active:scale-95 transition-all flex items-center justify-center gap-2" href="#/recomendar">' +
+      ic('add_location_alt', 'text-[28px] animate-bounce') + '<span>Añadir un sitio</span></a>';
+  }
+  /* Sin nada que enseñar todavía: lo dice en una línea y lleva a votar. */
+  function listasVacias() {
+    return '<p class="p-space-md rounded-lg bg-surface-container-low font-body-lg text-body-lg text-on-surface">Faltan votos: cada sitio entra con ' + S.MIN_VOTOS_RANKING + '.</p>' +
+      '<a class="w-full h-16 rounded-full bg-secondary text-on-secondary font-headline-md text-headline-md shadow-md active:scale-95 transition-all flex items-center justify-center gap-2" href="#/votar">' + ic('how_to_vote', 'text-[28px]') + '<span>Votar</span></a>';
+  }
+
+  /* ───────── filtros: cuatro botones grandes; cada uno abre sus opciones a la vista ───────── */
+  var PRECIOS = [{ id: 1, txt: '€' }, { id: 2, txt: '€€' }, { id: 3, txt: '€€€' }];
+  function resumenFiltro(k) {
+    if (k === 'tipo') return filtro.tipo ? tipo(filtro.tipo).plural : '';
+    if (k === 'zona') return filtro.zona ? zona(filtro.zona).nombre : '';
+    if (k === 'edad') return filtro.edades.map(function (id) { return S.EDADES.filter(function (e) { return e.id === id; })[0].nombre.replace('De ', ''); }).join(', ');
+    return filtro.precio ? '€€€'.slice(0, filtro.precio) : '';
+  }
+  var FILTROS = { tipo: ['category', 'Qué'], zona: ['location_on', 'Dónde'], edad: ['group', 'Edad'], precio: ['euro', 'Precio'] };
+  function botonesFiltro(claves) {
+    var alguno = claves.some(resumenFiltro);
+    return '<section class="grid grid-cols-2 gap-space-xs">' + claves.map(function (k) {
+      var v = resumenFiltro(k);
+      return '<button type="button" class="min-h-16 px-3 py-2 rounded-lg shadow-sm active:scale-95 transition-all flex items-center gap-2 text-left ' + (v ? 'bg-secondary text-on-secondary' : 'bg-surface-container-lowest text-on-surface') + '" data-filtro="' + k + '" aria-haspopup="dialog">' +
+        ic(FILTROS[k][0], 'text-[26px] flex-shrink-0') + '<span class="font-body-lg text-body-lg font-bold min-w-0 break-words">' + esc(v || FILTROS[k][1]) + '</span></button>';
+    }).join('') + (alguno ? '<button type="button" class="col-span-2 h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center gap-2 active:scale-95 transition-all" data-quitar-filtros>' + ic('close', 'text-[24px]') + 'Quitar filtros</button>' : '') + '</section>';
+  }
+  function activarFiltros(repinta) {
+    vista.querySelectorAll('[data-filtro]').forEach(function (b) { b.onclick = function () { abrirFiltro(b.dataset.filtro, repinta); }; });
+    vista.querySelectorAll('[data-quitar-filtros]').forEach(function (b) {
+      b.onclick = function () { filtro.tipo = ''; filtro.zona = ''; filtro.edades = []; filtro.precio = 0; repinta(); };
+    });
+  }
+  function abrirFiltro(k, repinta) {
+    var varias = k === 'edad';
+    var ops = k === 'tipo' ? S.TIPOS.map(function (t) { return { id: t.id, icono: t.icono, txt: t.plural }; })
+      : k === 'zona' ? S.destino(DESTINO).zonas.map(function (z) { return { id: z.id, icono: 'location_on', txt: z.nombre }; })
+      : k === 'edad' ? S.EDADES.map(function (e) { return { id: e.id, icono: 'group', txt: e.nombre + ' años' }; })
+      : PRECIOS.map(function (o) { return { id: o.id, icono: 'euro', txt: o.txt }; });
+    var marcado = function (id) { return k === 'tipo' ? filtro.tipo === id : k === 'zona' ? filtro.zona === id : k === 'edad' ? filtro.edades.indexOf(id) >= 0 : filtro.precio === id; };
+    var fila = function (o) {
+      var on = marcado(o.id);
+      return '<button type="button" class="min-h-16 px-4 py-2 rounded-lg flex items-center gap-3 text-left active:scale-95 transition-all ' + (on ? 'bg-secondary text-on-secondary' : 'bg-surface-container-low text-on-surface') + '" data-op="' + o.id + '" aria-pressed="' + on + '">' +
+        ic(o.icono, 'text-[26px] flex-shrink-0') + '<span class="font-body-lg text-body-lg font-bold flex-1">' + esc(o.txt) + '</span>' + (on ? ic('check', 'text-[26px]') : '') + '</button>';
+    };
+    var caja = document.createElement('div');
+    caja.className = 'fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-md flex items-end sm:items-center justify-center p-gutter';
+    caja.setAttribute('role', 'dialog'); caja.setAttribute('aria-modal', 'true'); caja.setAttribute('aria-label', FILTROS[k][1]);
+    function pinta() {
+      caja.innerHTML = '<div class="w-full max-w-sm max-h-[85vh] overflow-y-auto rounded-lg bg-surface-container-lowest p-space-md shadow-xl flex flex-col gap-space-xs animate-screen-enter">' +
+        '<div class="flex items-center justify-between gap-2 mb-1"><h3 class="font-headline-md text-headline-md text-on-surface">' + FILTROS[k][1] + '</h3>' +
+        '<button type="button" class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center" data-cerrar aria-label="Cerrar">' + ic('close', 'text-[26px] text-on-surface') + '</button></div>' +
+        ops.map(fila).join('') +
+        (varias ? '<button type="button" class="h-16 rounded-full bg-primary-container text-on-primary-container font-headline-md text-headline-md mt-1 active:scale-95 transition-all" data-cerrar>Listo</button>' : '') + '</div>';
+    }
+    function cerrar() { caja.remove(); document.removeEventListener('keydown', tecla); repinta(); }
+    function tecla(e) { if (e.key === 'Escape') cerrar(); }
+    caja.onclick = function (e) {
+      if (e.target === caja || e.target.closest('[data-cerrar]')) return cerrar();
+      var b = e.target.closest('[data-op]'); if (!b) return;
+      var id = b.dataset.op;
+      if (k === 'tipo') filtro.tipo = filtro.tipo === id ? '' : id;
+      else if (k === 'zona') filtro.zona = filtro.zona === id ? '' : id;
+      else if (k === 'precio') filtro.precio = filtro.precio === +id ? 0 : +id;
+      else { var i = filtro.edades.indexOf(id); if (i >= 0) filtro.edades.splice(i, 1); else filtro.edades.push(id); pinta(); return; }
+      cerrar();
+    };
+    pinta();
+    document.addEventListener('keydown', tecla);
+    document.body.appendChild(caja);
   }
   function ordenarPorNota(lista, criterio) {
     return lista
-      .map(function (l) { var c = cifras(l); return { l: l, v: criterio ? (c.crit[criterio] && c.crit[criterio].media) : c.nota, votos: criterio ? (c.crit[criterio] ? c.crit[criterio].n : 0) : c.votos }; })
+      .map(function (l) { var c = cifras(l, filtro.tipo); return { l: l, v: criterio ? (c.crit[criterio] && c.crit[criterio].media) : c.nota, votos: criterio ? (c.crit[criterio] ? c.crit[criterio].n : 0) : c.votos }; })
       .filter(function (x) { return x.v != null && x.votos >= S.MIN_VOTOS_RANKING; })
       .sort(function (a, b) { return b.v - a.v; })
       .map(function (x) { return x.l; });
@@ -284,77 +341,47 @@
     };
   };
 
-  var filtro = { tipo: '', zona: '', texto: '', edades: [] };
+  var filtro = { tipo: '', zona: '', texto: '', edades: [], precio: 0 };
   var PILL_ON = 'bg-primary-container text-on-primary-container shadow-sm', PILL_OFF = 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest';
   var CHIP_ON = 'bg-secondary-fixed text-on-secondary-fixed', CHIP_OFF = 'bg-surface-container-lowest text-on-surface';
 
   P.explorar = function () {
     seccion('Explorar');
-    var des = S.destino(DESTINO);
-    var zonaPill = function (id, txt) { return '<button type="button" class="zone-pill whitespace-nowrap px-4 py-2 rounded-full font-label-prominent text-label-prominent transition-all ' + (filtro.zona === id ? PILL_ON : PILL_OFF) + '" data-zona="' + id + '" aria-pressed="' + (filtro.zona === id) + '">' + txt + '</button>'; };
-    var catChip = function (id, icono, txt) { return '<button type="button" class="category-chip flex items-center gap-1.5 px-3.5 py-2 rounded-full shadow-sm active:scale-95 transition-all flex-shrink-0 ' + (filtro.tipo === id ? CHIP_ON : CHIP_OFF) + '" data-tipo="' + id + '" aria-pressed="' + (filtro.tipo === id) + '">' + ic(icono, 'text-[18px]') + '<span class="font-label-prominent text-label-prominent whitespace-nowrap">' + txt + '</span></button>'; };
-    var edadPill = function (e) { var on = filtro.edades.indexOf(e.id) >= 0; return '<button type="button" class="zone-pill whitespace-nowrap px-4 py-2 rounded-full font-label-prominent text-label-prominent transition-all ' + (on ? PILL_ON : PILL_OFF) + '" data-edad="' + e.id + '" aria-pressed="' + on + '">' + e.nombre + ' años</button>'; };
-
-    vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter space-y-space-lg pb-6 pt-space-md animate-screen-enter">' +
+    vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter space-y-space-md pb-6 pt-space-md animate-screen-enter">' +
       /* Banner de Stitch */
       '<section class="relative overflow-hidden rounded-lg bg-gradient-to-br from-secondary via-on-secondary-container to-secondary p-space-lg shadow-xl text-on-secondary">' +
       '<div class="absolute -right-8 -top-8 w-44 h-44 rounded-full bg-primary-container/20 blur-2xl pointer-events-none"></div><div class="absolute -left-10 -bottom-10 w-36 h-36 rounded-full bg-tertiary-fixed/15 blur-xl pointer-events-none"></div>' +
-      '<h2 class="relative z-10 py-space-md font-display-hero text-[44px] leading-[50px] font-extrabold tracking-tight text-on-secondary">¿Aquí dónde <span class="text-primary-container">se sale?</span></h2></section>' +
+      '<h2 class="relative z-10 font-display-hero text-[44px] leading-[50px] font-extrabold tracking-tight text-on-secondary">¿Aquí dónde <span class="text-primary-container">se sale?</span></h2></section>' +
       /* Buscador (el de la pantalla Mapa de Stitch) */
-      '<label class="flex items-center gap-3 h-14 px-5 rounded-full bg-surface-container-lowest shadow-md">' + ic('search', 'text-[24px] text-secondary') +
-      '<span class="sr-only">Buscar un sitio</span><input type="search" id="busca" class="flex-1 min-w-0 bg-transparent font-body-lg text-body-lg text-on-surface placeholder:text-on-surface-variant/70 focus:outline-none" placeholder="Buscar zona, bar o restaurante…" value="' + esc(filtro.texto) + '" autocomplete="off"></label>' +
+      '<label class="flex items-center gap-3 h-16 px-5 rounded-full bg-surface-container-lowest shadow-md">' + ic('search', 'text-[28px] text-secondary') +
+      '<span class="sr-only">Buscar un sitio</span><input type="search" id="busca" class="flex-1 min-w-0 bg-transparent font-body-lg text-body-lg text-on-surface placeholder:text-on-surface-variant focus:outline-none" placeholder="Buscar" value="' + esc(filtro.texto) + '" autocomplete="off"></label>' +
+      (destinosConSitios().length > 1 ? '<button type="button" class="h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center gap-2 w-full" data-destinos>' + ic(S.destino(DESTINO).icono, 'text-[24px]') + esc(DESTINO) + ic('expand_more', 'text-[24px]') + '</button>' : '') +
+      botonesFiltro(['tipo', 'zona', 'edad', 'precio']) +
       /* Cerca de mí */
       botonCerca() +
-      /* Zonas */
-      '<section class="flex flex-col gap-space-xs"><div class="flex items-center justify-between px-1"><span class="font-label-prominent text-label-prominent text-on-surface">' + esc(des.titulo) + '</span>' +
-      '<button type="button" class="font-label-micro text-label-micro text-primary flex items-center gap-0.5" data-destinos>' + ic(des.icono, 'text-[13px]') + ' ' + esc(DESTINO) + ic('expand_more', 'text-[13px]') + '</button></div>' +
-      '<div class="flex items-center gap-space-xs overflow-x-auto no-scrollbar py-1 -mx-gutter-mobile px-gutter-mobile sm:mx-0 sm:px-0">' +
-      zonaPill('', esc(des.todo)) + des.zonas.map(function (z) { return zonaPill(z.id, esc(z.nombre)); }).join('') + '</div></section>' +
-      /* Tipos */
-      '<section class="flex items-center gap-space-xs overflow-x-auto no-scrollbar -mx-gutter-mobile px-gutter-mobile sm:mx-0 sm:px-0 py-1">' +
-      catChip('', 'apps', 'Todo') + S.TIPOS.map(function (t) { return catChip(t.id, t.icono, t.plural); }).join('') + '</section>' +
-      /* Edades del público */
-      '<section class="flex flex-col gap-space-xs"><div class="flex items-center justify-between px-1"><span class="font-label-prominent text-label-prominent text-on-surface">Con gente de…</span>' +
-      '<span class="font-label-micro text-label-micro text-primary flex items-center gap-0.5">' + ic('group', 'text-[13px]') + ' Puedes marcar varios</span></div>' +
-      '<div class="flex items-center gap-space-xs overflow-x-auto no-scrollbar py-1 -mx-gutter-mobile px-gutter-mobile sm:mx-0 sm:px-0">' + S.EDADES.map(edadPill).join('') + '</div></section>' +
       /* Carrusel */
-      '<section class="flex flex-col gap-space-sm pt-2"><div class="flex items-center justify-between px-1"><div class="flex items-center gap-2">' + ic('local_fire_department', 'text-primary-container text-[22px]') +
-      '<h3 class="font-headline-md text-headline-md text-on-surface tracking-tight">Lo más votado</h3></div>' +
-      '<span class="font-label-prominent text-label-prominent text-primary" id="cuantos"></span></div>' +
+      '<section class="flex flex-col gap-space-xs pt-2"><div class="flex items-center justify-between px-1"><h3 class="font-headline-md text-headline-md text-on-surface tracking-tight">Lo más votado</h3>' +
+      '<span class="font-body-md text-body-md font-bold text-primary" id="cuantos"></span></div>' +
       '<div class="flex items-stretch gap-space-md overflow-x-auto no-scrollbar -mx-gutter-mobile px-gutter-mobile sm:mx-0 sm:px-0 py-2" id="carrusel"></div></section>' +
       /* Rankings por criterio */
-      '<section class="flex flex-col gap-space-md pt-2">' + cabeceraSeccion('Sin trucos ni algoritmos ocultos', 'Rankings por Criterio Imparcial', 'Solo entran los sitios con ' + S.MIN_VOTOS_RANKING + ' votos o más.') +
-      '<div class="flex flex-col gap-space-md" id="rankings"></div>' +
-      '<a class="font-label-prominent text-label-prominent text-primary flex items-center justify-center gap-0.5" href="#/top">Ver todas las listas ' + ic('chevron_right', 'text-[16px]') + '</a></section>' +
+      '<section class="flex flex-col gap-space-md pt-2" id="zona-rankings"><div class="flex flex-col gap-space-md" id="rankings"></div>' +
+      '<a class="h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center gap-1" href="#/top">Todas las listas ' + ic('chevron_right', 'text-[26px]') + '</a></section>' +
       llamadaRecomendar() + '</div>';
 
-    vista.querySelectorAll('[data-zona]').forEach(function (b) {
-      b.onclick = function () { filtro.zona = b.dataset.zona; P.explorar(); };
-    });
     vista.querySelectorAll('[data-destinos]').forEach(function (b) { b.onclick = abrirDestinos; });
-    vista.querySelectorAll('[data-tipo]').forEach(function (b) {
-      b.onclick = function () { filtro.tipo = b.dataset.tipo; P.explorar(); };
-    });
-    vista.querySelectorAll('[data-edad]').forEach(function (b) {
-      b.onclick = function () {
-        var i = filtro.edades.indexOf(b.dataset.edad);
-        if (i >= 0) filtro.edades.splice(i, 1); else filtro.edades.push(b.dataset.edad);
-        b.className = b.className.replace(i >= 0 ? PILL_ON : PILL_OFF, i >= 0 ? PILL_OFF : PILL_ON);
-        b.setAttribute('aria-pressed', i < 0);
-        pintarResultados();
-      };
-    });
+    activarFiltros(P.explorar);
     document.getElementById('busca').oninput = function (e) { filtro.texto = e.target.value; pintarResultados(); };
     pintarResultados();
     ubicar();
   };
 
   function sinTildes(s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
-  function filtrados() {
-    var q = sinTildes(filtro.texto.trim());
+  function filtrados(sinTexto) {
+    var q = sinTexto ? '' : sinTildes(filtro.texto.trim());
     return LOCALES.filter(function (l) {
       if (filtro.tipo && l.tipo !== filtro.tipo && l.tipo2 !== filtro.tipo && l.tipo3 !== filtro.tipo) return false;
       if (filtro.zona && l.zona !== filtro.zona) return false;
+      if (filtro.precio && l.precio !== filtro.precio) return false;
       if (filtro.edades.length && !encajaEdad(mayoria(cifras(l)), filtro.edades)) return false;
       if (q && sinTildes(l.nombre + ' ' + l.municipio + ' ' + (l.barrio || '') + ' ' + tipo(l.tipo).nombre + ' ' + (l.tipo3 ? tipo(l.tipo3).nombre : '') + ' ' + ((zona(l.zona) || {}).nombre || '')).indexOf(q) < 0) return false;
       return true;
@@ -366,44 +393,51 @@
     var top = porVotos(base).slice(0, 10);
     document.getElementById('cuantos').textContent = base.length > 10 ? 'Top 10' : base.length + (base.length === 1 ? ' sitio' : ' sitios');
     document.getElementById('carrusel').innerHTML = top.length ? top.map(tarjetaCarrusel).join('')
-      : '<div class="w-full rounded-lg bg-surface-container-lowest shadow-md p-space-lg text-center font-body-md text-body-md text-on-surface-variant">No hay ningún sitio con estos filtros todavía.<br><a class="font-label-prominent text-label-prominent text-primary" href="#/recomendar">¿Conoces uno? Recomiéndalo</a></div>';
+      : '<div class="w-full rounded-lg bg-surface-container-lowest shadow-md p-space-lg text-center font-body-lg text-body-lg text-on-surface">No hay ninguno.</div>';
     var con = function (cid) { return base.filter(function (l) { return S.criteriosDe(l.tipo, l.tipo2).some(function (c) { return c.id === cid; }); }); };
-    document.getElementById('rankings').innerHTML =
-      bloqueRanking('sanitizer', 'tertiary', 'Campeones de Limpieza', 'Baños, barra, mesas y cocina', ordenarPorNota(con('limpieza'), 'limpieza'), 'limpieza') +
-      bloqueRanking('local_bar', 'secondary', 'Reyes de las Consumiciones', 'Lo que comes y bebes: calidad y cantidad', ordenarPorNota(con('consumiciones'), 'consumiciones'), 'consumiciones') +
-      bloqueRanking('local_parking', 'neutro', 'Fácil Parking & Cero Estrés', 'Si se aparca fácil', ordenarPorNota(con('parking'), 'parking'), 'parking');
+    var bloques = bloqueRanking('sanitizer', 'tertiary', 'Más limpios', ordenarPorNota(con('limpieza'), 'limpieza'), 'limpieza') +
+      bloqueRanking('local_bar', 'secondary', 'Mejor comida y bebida', ordenarPorNota(con('consumiciones'), 'consumiciones'), 'consumiciones') +
+      bloqueRanking('local_parking', 'neutro', 'Mejor parking', ordenarPorNota(con('parking'), 'parking'), 'parking');
+    document.getElementById('rankings').innerHTML = bloques;
+    document.getElementById('rankings').classList.toggle('hidden', !bloques);
   }
 
   /* Top Listas: el mejor en cada cosa, toda la isla. */
   P.top = function () {
     seccion('Top Listas');
-    var tonos = ['tertiary', 'secondary', 'neutro'];
-    var bloques = [bloqueRanking('emoji_events', 'secondary', 'Los mejor votados', 'La nota media de todo', ordenarPorNota(LOCALES), null)]
+    var tonos = ['tertiary', 'secondary', 'neutro'], base = filtrados(true);
+    var bloques = [bloqueRanking('emoji_events', 'secondary', 'Los mejor votados', ordenarPorNota(base), null)]
       .concat(S.BASE.concat(S.EXTRAS).map(function (c, i) {
-        var aplica = LOCALES.filter(function (l) { return S.criteriosDe(l.tipo, l.tipo2).some(function (x) { return x.id === c.id; }); });
-        return bloqueRanking(c.icono, tonos[i % 3], 'Lo mejor en ' + esc(c.nombre.toLowerCase()), esc(c.ayuda), ordenarPorNota(aplica, c.id), c.id);
-      }));
+        var aplica = base.filter(function (l) { return S.criteriosDe(l.tipo, l.tipo2).some(function (x) { return x.id === c.id; }); });
+        return bloqueRanking(c.icono, tonos[i % 3], esc(c.nombre), ordenarPorNota(aplica, c.id), c.id);
+      })).join('');
     vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' +
-      cabeceraSeccion('Sin trucos ni algoritmos ocultos', 'Top Listas', 'Lo que más te importa hoy, ordenado por lo que vota la gente. Solo entran los sitios con ' + S.MIN_VOTOS_RANKING + ' votos o más.') +
-      bloques.join('') + llamadaRecomendar() + '</div>';
+      cabeceraSeccion('Top Listas') + botonesFiltro(['tipo', 'zona', 'edad', 'precio']) +
+      (bloques || listasVacias()) + llamadaRecomendar() + '</div>';
+    activarFiltros(P.top);
   };
 
   P.zonas = function () {
     seccion('Zonas');
-    var des = S.destino(DESTINO);
+    var des = S.destino(DESTINO), zonaAntes = filtro.zona;
+    filtro.zona = '';
+    var base = filtrados(true);
+    filtro.zona = zonaAntes;
     vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' +
-      cabeceraSeccion(esc(DESTINO) + ', de punta a punta', 'Por zonas', 'Los sitios de cada zona: primero los que ya tienen nota.') +
+      cabeceraSeccion('Zonas') + botonesFiltro(['tipo', 'edad', 'precio']) +
       botonCerca() +
       des.zonas.map(function (z) {
-        var enZona = LOCALES.filter(function (l) { return l.zona === z.id; });
+        var enZona = base.filter(function (l) { return l.zona === z.id; });
+        if (!enZona.length) return '';
         var top = ordenarPorNota(enZona), resto = porVotos(enZona.filter(function (l) { return top.indexOf(l) < 0; }));
-        var filas = top.map(function (l, i) { var c = cifras(l); return filaRanking(l, i, c.nota, c.votos); }).join('') + resto.map(filaSitio).join('');
+        var filas = top.map(function (l, i) { var c = cifras(l, filtro.tipo); return filaRanking(l, i, c.nota, c.votos); }).join('') + resto.map(filaSitio).join('');
         return '<div class="flex flex-col rounded-lg bg-surface-container-lowest shadow-md p-space-md gap-space-md">' +
           '<div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2 min-w-0"><div class="w-10 h-10 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center flex-shrink-0">' + ic('location_on', 'text-[20px]', true) + '</div>' +
-          '<div class="min-w-0"><h4 class="font-label-prominent text-label-prominent text-on-surface">' + esc(z.nombre) + '</h4><span class="font-label-micro text-label-micro text-on-surface-variant">' + esc(z.lugares.join(' • ')) + '</span></div></div>' +
-          '<span class="px-2 py-0.5 rounded-full bg-secondary-fixed/50 text-on-secondary-fixed font-label-badge text-label-badge flex-shrink-0">' + enZona.length + (enZona.length === 1 ? ' sitio' : ' sitios') + '</span></div>' +
-          '<div class="flex flex-col gap-space-xs">' + (filas || '<p class="p-2.5 rounded-DEFAULT bg-surface-container-low font-body-sm text-body-sm text-on-surface-variant">Todavía no hay sitios aquí. <a class="font-bold text-primary" href="#/recomendar">Recomienda uno</a></p>') + '</div></div>';
+          '<h4 class="font-headline-md text-headline-md text-on-surface min-w-0">' + esc(z.nombre) + '</h4></div>' +
+          '<span class="font-body-lg text-body-lg font-bold text-secondary flex-shrink-0">' + enZona.length + '</span></div>' +
+          '<div class="flex flex-col gap-space-xs">' + filas + '</div></div>';
       }).join('') + '</div>';
+    activarFiltros(P.zonas);
   };
 
   /* Ficha: «Detalle Local» de Stitch. */
@@ -420,7 +454,7 @@
 
   P.local = function (id) {
     var l = local(id); if (!l) return P.noExiste();
-    seccion('Detalle Local');
+    seccion('Sitio');
     var c = cifras(l), m = mayoria(c), notasCat = notasPorCategoria(l, c);
     var mapa = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(l.nombre + ', ' + (l.direccion || l.barrio || '') + ', ' + l.municipio + ', ' + l.destino);
 
@@ -428,7 +462,7 @@
       var d = c.crit[cr.id], k = CRIT_COLOR[i % CRIT_COLOR.length];
       return '<div class="bg-surface-container-lowest rounded-lg p-space-md shadow-sm"><div class="flex items-center justify-between mb-1.5"><div class="flex items-center gap-2 min-w-0">' +
         '<div class="w-8 h-8 rounded-full ' + k[0] + ' flex items-center justify-center flex-shrink-0">' + ic(cr.icono, 'text-[18px]') + '</div>' +
-        '<div class="min-w-0"><h4 class="font-body-lg text-body-lg text-on-surface font-bold">' + esc(cr.nombre) + '</h4><p class="font-body-sm text-body-sm text-on-surface-variant">' + esc(cr.ayuda) + (d.media == null ? '' : ' • ' + d.n + (d.n === 1 ? ' voto' : ' votos')) + '</p></div></div>' +
+        '<div class="min-w-0"><h4 class="font-body-lg text-body-lg text-on-surface font-bold">' + esc(cr.nombre) + '</h4></div></div>' +
         '<span class="font-score-display text-score-display ' + (d.media == null ? 'text-on-surface-variant' : k[1]) + ' ml-2">' + (d.media == null ? '–' : n1(d.media)) + '</span></div>' +
         '<div class="w-full h-2 rounded-full bg-surface-container-highest overflow-hidden"><div class="h-full ' + k[2] + ' rounded-full" style="width: ' + (d.media == null ? 0 : d.media * 10) + '%;"></div></div></div>';
     }).join('');
@@ -470,7 +504,7 @@
     vista.innerHTML = '<div class="flex flex-col w-full animate-screen-enter">' +
       '<div class="px-gutter pt-space-md pb-space-sm flex items-center justify-between gap-2"><div class="flex items-center gap-space-xs min-w-0">' +
       '<button type="button" class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container active:scale-95 transition-all flex-shrink-0" id="atras" aria-label="Volver">' + ic('arrow_back_ios_new', 'text-[22px]') + '</button>' +
-      '<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-tertiary/10 text-tertiary min-w-0">' + ic('verified', 'text-[16px]', true) + '<span class="font-label-badge text-label-badge uppercase tracking-wider truncate">Votos de la comunidad</span></div></div>' +
+      '</div>' +
       '<div class="flex items-center gap-space-xs flex-shrink-0">' +
       '<button type="button" class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-transform active:scale-95 shadow-sm" id="btn-share" aria-label="Compartir">' + ic('share', 'text-[20px]') + '</button>' +
       '<button type="button" class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-transform active:scale-95 shadow-sm" id="btn-bookmark" aria-label="Guardar" aria-pressed="' + guardado + '">' +
@@ -478,7 +512,6 @@
       /* Cabecera con el degradado donde irá la foto */
       '<div class="px-gutter pb-space-md"><div class="relative w-full h-56 rounded-lg overflow-hidden shadow-md group" id="cab-foto">' + lienzo(l, 'h-full') + '</div>' +
       '<div class="absolute inset-0 bg-gradient-to-t from-on-background/80 via-on-background/25 to-transparent"></div>' +
-      '<div class="absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-md shadow-sm"><div class="w-2.5 h-2.5 rounded-full bg-tertiary-container animate-ping"></div><span class="font-label-badge text-label-badge text-on-surface">100% Libre • Sin Patrocinio</span></div>' +
       (l.precio ? '<div class="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-secondary text-on-secondary font-label-prominent text-label-prominent flex items-center gap-1">' + euros(l) + '</div>' : '') +
       '<div class="absolute bottom-3 left-3 right-3 text-surface-container-lowest flex items-end justify-between gap-2"><div class="min-w-0">' +
       '<span class="font-label-badge text-label-badge uppercase tracking-wider text-primary-fixed-dim">' + rotulo(l) + '</span>' +
@@ -494,12 +527,8 @@
       '<div class="relative flex-shrink-0 w-16 h-16 rounded-full bg-gradient-to-tr from-primary to-primary-container flex items-center justify-center shadow-lg">' + ic('ecg_heart', 'text-[32px] text-on-secondary', true) +
       '<div class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container shadow">' + ic('check', 'text-[16px] font-bold') + '</div></div>' +
       '<div><div class="flex items-baseline gap-1"><span class="font-display-hero text-display-hero text-on-secondary tracking-tight">' + (c.nota == null ? '–' : n1(c.nota)) + '</span><span class="font-headline-md text-headline-md text-primary-fixed-dim">/ 10</span></div>' +
-      '<p class="font-label-prominent text-label-prominent text-surface-container-high">Nota Salimos</p></div></div>' +
-      '<div class="text-right"><div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-lowest/15 backdrop-blur-md text-on-secondary font-label-micro text-label-micro">' + ic('how_to_reg', 'text-[14px]') + '<span>Con cuenta</span></div>' +
-      '<p class="font-body-sm text-body-sm text-surface-variant mt-1">' + (c.votos ? c.votos + (c.votos === 1 ? ' voto real' : ' votos reales') : 'Todavía sin votos') + '</p></div></div>' +
-      '<div class="mt-space-md pt-space-sm bg-on-secondary-fixed/30 rounded-DEFAULT px-3 py-2 flex items-center justify-between gap-2 relative z-10"><div class="flex items-center gap-2">' + ic('shield_lock', 'text-[18px] text-tertiary-fixed') +
-      '<span class="font-label-micro text-label-micro text-surface-container-lowest">' + (c.votos < S.MIN_VOTOS_RANKING ? 'Entra en los rankings con ' + S.MIN_VOTOS_RANKING + ' votos' : 'Una persona, un voto por sitio') + '</span></div>' +
-      '<span class="font-label-badge text-label-badge text-primary-fixed flex-shrink-0">100% ' + esc(l.destino.toUpperCase()) + '</span></div></div></div>' +
+      '</div></div>' +
+      '<p class="font-body-lg text-body-lg font-bold text-on-secondary text-right">' + (c.votos ? c.votos + (c.votos === 1 ? ' voto' : ' votos') : 'Sin votos') + '</p></div></div></div>' +
       tarjetaCheckin(l) +
       (l.nota_oscar ? '<div class="px-gutter pb-space-lg"><div class="rounded-lg bg-surface-container-lowest p-space-lg shadow-sm"><div class="flex items-center gap-2 mb-space-xs">' + ic('format_quote', 'text-[24px] text-primary') + '<h3 class="font-headline-md text-headline-md text-on-surface">Lo que dice Óscar</h3></div>' +
         '<p class="font-body-lg text-body-lg text-on-surface">' + esc(l.nota_oscar) + '</p><p class="font-label-prominent text-label-prominent text-on-surface-variant mt-space-sm">Óscar, de Salimos</p></div></div>' : '') +
@@ -507,13 +536,13 @@
       (l.video ? '<div class="px-gutter pb-space-lg"><h3 class="font-headline-md text-headline-md text-on-surface mb-space-xs">En vídeo</h3><div id="caja-video">' +
         '<button type="button" id="ver-video" class="w-full h-16 rounded-full bg-secondary text-on-secondary font-headline-md text-headline-md flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95">' + ic('play_circle', 'text-[28px]') + ' Ver el vídeo</button></div>' +
         '<p class="font-body-sm text-body-sm text-on-surface-variant mt-space-xs">Vídeo' + (l.video_autor ? ' de @' + esc(l.video_autor) : '') + ' en ' + (/tiktok\.com/.test(l.video) ? 'TikTok' : 'Instagram') + '</p></div>' : '') +
-      (etiquetas ? '<div class="px-gutter pb-space-lg"><div class="flex items-center justify-between mb-space-xs"><h3 class="font-headline-md text-headline-md text-on-surface">Lo que tiene</h3><span class="font-label-micro text-label-micro text-secondary font-semibold">Datos del sitio</span></div>' +
+      (etiquetas ? '<div class="px-gutter pb-space-lg"><div class="flex items-center justify-between mb-space-xs"><h3 class="font-headline-md text-headline-md text-on-surface">Lo que tiene</h3></div>' +
         '<div class="flex flex-wrap gap-space-xs mt-space-xs">' + etiquetas + '</div></div>' : '') +
-      '<div class="px-gutter pb-space-lg"><div class="flex items-center justify-between mb-space-xs"><h3 class="font-headline-md text-headline-md text-on-surface">Veredicto de la Comunidad</h3><span class="font-label-micro text-label-micro text-secondary font-semibold">Basado en votos</span></div>' +
+      '<div class="px-gutter pb-space-lg"><div class="flex items-center justify-between mb-space-xs"><h3 class="font-headline-md text-headline-md text-on-surface">Lo que dice la gente</h3></div>' +
       '<div class="flex flex-wrap gap-space-xs mt-space-xs">' + (veredicto || '<div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface font-label-badge text-label-badge shadow-sm">' + ic('how_to_vote', 'text-[16px] text-primary-container') + '<span>Todavía sin respuestas: sé el primero</span></div>') + '</div></div>' +
-      '<div class="px-gutter pb-space-lg"><div class="flex items-center justify-between mb-space-sm"><h3 class="font-headline-md text-headline-md text-on-surface">Evaluación Multicriterio</h3><span class="font-label-badge text-label-badge text-on-surface-variant">' + S.criteriosDe(l.tipo, l.tipo2).length + ' Dimensiones</span></div>' +
+      '<div class="px-gutter pb-space-lg"><div class="flex items-center justify-between mb-space-sm"><h3 class="font-headline-md text-headline-md text-on-surface">Notas</h3></div>' +
       '<div class="flex flex-col gap-space-sm">' + criterios + '</div></div>' +
-      (notasCat.length ? '<div class="px-gutter pb-space-lg"><h3 class="font-headline-md text-headline-md text-on-surface mb-space-sm">Nota por categoría</h3><div class="flex flex-col gap-space-xs">' +
+      (notasCat.length ? '<div class="px-gutter pb-space-lg"><h3 class="font-headline-md text-headline-md text-on-surface mb-space-sm">Por categoría</h3><div class="flex flex-col gap-space-xs">' +
         notasCat.map(function (n) {
           return '<div class="flex items-center justify-between gap-3 bg-surface-container p-space-md rounded-lg"><div class="flex items-center gap-2 min-w-0">' + ic(n.icono, 'text-[22px] text-secondary') +
             '<div class="flex flex-col min-w-0"><span class="font-label-prominent text-label-prominent text-on-surface">' + esc(n.nombre) + '</span><span class="font-body-sm text-body-sm text-on-surface-variant">' + esc(n.detalle) + '</span></div></div>' +
@@ -521,11 +550,11 @@
         }).join('') + '</div></div>' : '') +
       (datos ? '<div class="px-gutter pb-space-lg"><div class="bg-surface-container p-space-md rounded-lg"><div class="flex items-center gap-2 mb-2">' + ic('storefront', 'text-[18px] text-secondary') +
         '<h4 class="font-label-prominent text-label-prominent text-on-surface">Cómo encontrarlo</h4></div><div class="flex flex-col gap-2">' + datos + '</div></div></div>' : '') +
-      (l.comentarios ? '<div class="px-gutter pb-space-xl" id="comentarios" aria-busy="true"><div class="flex items-center justify-between mb-space-sm"><h3 class="font-headline-md text-headline-md text-on-surface">Últimas Evaluaciones</h3>' +
+      (l.comentarios ? '<div class="px-gutter pb-space-xl" id="comentarios" aria-busy="true"><div class="flex items-center justify-between mb-space-sm"><h3 class="font-headline-md text-headline-md text-on-surface">Comentarios</h3>' +
         '<span class="font-label-badge text-label-badge text-secondary">' + l.comentarios + (l.comentarios === 1 ? ' comentario' : ' comentarios') + '</span></div><div class="flex flex-col gap-space-sm lista"><p class="font-body-sm text-body-sm text-on-surface-variant">Cargando comentarios…</p></div></div>' : '') +
       '<div class="sticky bottom-0 inset-x-0 bg-surface-container-lowest/90 backdrop-blur-xl p-space-md shadow-[0_-8px_24px_rgba(0,0,0,0.06)] z-40"><div class="flex items-center gap-space-sm max-w-lg mx-auto">' +
-      '<a class="flex-1 h-12 rounded-full bg-surface-container-high text-on-surface font-label-prominent text-label-prominent flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-transform active:scale-95 shadow-sm" href="' + mapa + '" target="_blank" rel="noopener">' + ic('map', 'text-[20px] text-secondary') + '<span>Ver en mapa</span></a>' +
-      '<a class="flex-[1.4] h-12 rounded-full bg-primary-container text-on-surface font-headline-md text-[15px] flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95 hover:brightness-105" href="#/votar/' + l.id + '">' + ic('how_to_vote', 'text-[20px]') + '<span>' + (c.mio ? 'Cambiar mi voto' : 'Evaluar este local') + '</span></a></div></div></div>';
+      '<a class="flex-1 h-16 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-transform active:scale-95 shadow-sm" href="' + mapa + '" target="_blank" rel="noopener">' + ic('map', 'text-[20px] text-secondary') + '<span>Mapa</span></a>' +
+      '<a class="flex-[1.6] h-16 rounded-full bg-primary-container text-on-surface font-headline-md text-[20px] flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95 hover:brightness-105" href="#/votar/' + l.id + '">' + ic('how_to_vote', 'text-[20px]') + '<span>' + (c.mio ? 'Cambiar mi voto' : 'Votar') + '</span></a></div></div></div>';
 
     document.getElementById('atras').onclick = function () { if (history.length > 1) history.back(); else location.hash = '#/explorar'; };
     var bc = document.getElementById('checkin'); if (bc) bc.onclick = function () { hacerCheckin(l, bc); };
@@ -598,36 +627,26 @@
   /* Votar sin sitio elegido: la lista para escoger. */
   function elegirParaVotar() {
     seccion('Votar');
-    vista.innerHTML = '<div class="px-gutter pt-space-md pb-space-lg flex flex-col gap-space-md animate-screen-enter">' + cabeceraVotar(null) +
-      '<div class="flex flex-col gap-space-sm"><h2 class="font-label-prominent text-label-prominent text-on-surface uppercase tracking-wider px-1">¿Dónde has estado?</h2>' +
-      '<label class="flex items-center gap-3 h-14 px-5 rounded-full bg-surface-container-lowest shadow-md">' + ic('search', 'text-[24px] text-secondary') +
-      '<span class="sr-only">Buscar un sitio</span><input type="search" id="busca-voto" class="flex-1 min-w-0 bg-transparent font-body-lg text-body-lg text-on-surface placeholder:text-on-surface-variant/70 focus:outline-none" placeholder="Busca el sitio…" autocomplete="off"></label>' +
-      '<div class="flex flex-col gap-space-xs" id="para-votar"></div></div>' + llamadaRecomendar() + '</div>';
+    vista.innerHTML = '<div class="px-gutter pt-space-md pb-space-lg flex flex-col gap-space-md animate-screen-enter">' + cabeceraSeccion('¿Dónde has estado?') +
+      '<label class="flex items-center gap-3 h-16 px-5 rounded-full bg-surface-container-lowest shadow-md">' + ic('search', 'text-[28px] text-secondary') +
+      '<span class="sr-only">Buscar un sitio</span><input type="search" id="busca-voto" class="flex-1 min-w-0 bg-transparent font-body-lg text-body-lg text-on-surface placeholder:text-on-surface-variant focus:outline-none" placeholder="Buscar" autocomplete="off"></label>' +
+      '<div class="flex flex-col gap-space-xs" id="para-votar"></div>' + llamadaRecomendar() + '</div>';
     function pinta(q) {
       q = sinTildes(q || '');
       var l = porVotos(LOCALES).filter(function (x) { return !q || sinTildes(x.nombre + ' ' + x.municipio + ' ' + (x.barrio || '')).indexOf(q) >= 0; });
       document.getElementById('para-votar').innerHTML = l.map(function (x) { return filaSitio(x).replace('#/local/', '#/votar/'); }).join('') ||
-        '<p class="p-2.5 rounded-DEFAULT bg-surface-container-low font-body-sm text-body-sm text-on-surface-variant">No está. <a class="font-bold text-primary" href="#/recomendar">Recomiéndalo</a> y lo damos de alta.</p>';
+        '<p class="p-space-md rounded-DEFAULT bg-surface-container-low font-body-lg text-body-lg text-on-surface">No está. Añádelo abajo.</p>';
     }
     document.getElementById('busca-voto').oninput = function (e) { pinta(e.target.value); };
     pinta('');
   }
   function cabeceraVotar(l) {
-    return '<div class="relative overflow-hidden rounded-lg bg-surface-container p-space-lg shadow-sm"><div class="flex items-start justify-between gap-space-sm"><div class="flex flex-col min-w-0">' +
-      '<div class="flex items-center gap-space-xs mb-1"><span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-micro text-label-micro uppercase tracking-wider">Voto libre</span><span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span></div>' +
-      '<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface tracking-tight">' + (l && votosDe()[l.id] ? 'Cambia tu voto' : 'Califica tu experiencia real') + '</h1>' +
-      (l ? '<div class="flex items-center gap-1.5 mt-1 text-on-surface-variant min-w-0">' + ic('storefront', 'text-[18px] text-primary flex-shrink-0') + '<span class="font-body-md text-body-md font-semibold text-on-surface truncate">' + esc(l.nombre) + '</span>' +
-        '<span class="font-body-sm text-body-sm text-on-surface-variant truncate">• ' + esc(l.barrio || l.municipio) + '</span></div>' : '') + '</div>' +
-      (l ? '<div class="flex-shrink-0 flex flex-col items-center justify-center p-space-sm rounded-lg bg-inverse-surface text-inverse-on-surface shadow-md min-w-[76px]"><div class="relative flex items-center justify-center">' +
-        '<div class="w-7 h-7 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container shadow-sm">' + ic('pulse_alert', 'text-[16px]', true) + '</div>' +
-        '<div class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-tertiary-fixed-dim text-on-tertiary-fixed flex items-center justify-center shadow-xs">' + ic('check', 'text-[11px] font-bold') + '</div></div>' +
-        '<span class="font-score-display text-score-display text-primary-fixed-dim mt-1" id="global-live-score">–</span><span class="font-label-micro text-label-micro tracking-widest uppercase opacity-80">Media</span></div>' : '') + '</div>' +
-      '<div class="mt-space-md p-space-sm rounded-DEFAULT bg-tertiary-fixed/40 text-on-tertiary-fixed flex items-center gap-space-sm shadow-xs"><div class="w-8 h-8 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center flex-shrink-0">' + ic('verified_user', 'text-[18px]') + '</div>' +
-      '<p class="font-body-sm text-body-sm leading-snug"><strong class="font-label-prominent">100% libre y anónimo:</strong> en Salimos ningún local paga, infla ni puede borrar tus notas. Tu criterio manda.</p></div></div>';
+    return '<div class="flex items-center justify-between gap-space-sm"><h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface min-w-0">' + esc(l.nombre) + '</h1>' +
+      '<div class="flex-shrink-0 flex items-center justify-center w-20 h-20 rounded-full bg-inverse-surface shadow-md"><span class="font-score-display text-score-display text-primary-fixed-dim" id="global-live-score">–</span></div></div>';
   }
 
-  var TAG_ON = 'tag-pill active-tag px-3 py-1.5 rounded-full bg-secondary text-on-secondary font-label-badge text-label-badge transition-all flex items-center gap-1 shadow-xs';
-  var TAG_OFF = 'tag-pill px-3 py-1.5 rounded-full bg-surface-container-highest text-on-surface-variant font-label-badge text-label-badge hover:bg-surface-variant transition-all flex items-center gap-1';
+  var TAG_ON = 'tag-pill active-tag min-h-14 px-5 py-2 rounded-full bg-secondary text-on-secondary font-body-lg text-body-lg font-bold transition-all flex items-center gap-2 shadow-xs';
+  var TAG_OFF = 'tag-pill min-h-14 px-5 py-2 rounded-full bg-surface-container-highest text-on-surface font-body-lg text-body-lg font-bold hover:bg-surface-variant transition-all flex items-center gap-2';
 
   P.votar = function (id) {
     if (!id) return elegirParaVotar();
@@ -642,48 +661,43 @@
     var PALABRA = ['Fatal', 'Fatal', 'Muy mal', 'Mal', 'Flojo', 'Regular', 'Aprobado', 'Bien', 'Muy bien', 'Excelente', 'Perfecto'];
 
     vista.innerHTML = '<div class="px-gutter pt-space-md pb-space-lg flex flex-col gap-space-md animate-screen-enter">' + cabeceraVotar(l) + avisoVerificado(l, previo) +
-      (cats.length > 1 ? '<div class="flex flex-col gap-space-xs"><h2 class="font-label-prominent text-label-prominent text-on-surface uppercase tracking-wider px-1">Vótalo como</h2>' +
-        '<div class="flex items-center gap-2 flex-wrap" role="group" aria-label="Categoría que votas">' + cats.map(function (t) {
-          return '<button type="button" class="' + (t === cat ? TAG_ON : TAG_OFF) + '" data-cat="' + t + '" aria-pressed="' + (t === cat) + '">' + ic(tipo(t).icono, 'text-[18px]') + '<span>' + esc(tipo(t).nombre) + '</span></button>';
-        }).join('') + '</div><p class="font-body-sm text-body-sm text-on-surface-variant px-1" id="cat-ayuda"></p></div>' : '') +
-      '<div class="flex flex-col gap-space-sm"><div class="flex items-center justify-between px-1"><h2 class="font-label-prominent text-label-prominent text-on-surface uppercase tracking-wider">' + crits.length + ' cosas que votar</h2>' +
-      '<span class="font-label-badge text-label-badge text-secondary font-semibold">Toca o desliza</span></div>' +
+      (cats.length > 1 ? '<div class="flex flex-col gap-space-xs" id="categorias"><div class="flex items-center gap-2 flex-wrap" role="group" aria-label="Categoría que votas">' + cats.map(function (t) {
+          return '<button type="button" class="' + (t === cat ? TAG_ON : TAG_OFF) + '" data-cat="' + t + '" aria-pressed="' + (t === cat) + '">' + ic(tipo(t).icono, 'text-[24px]') + '<span>' + esc(tipo(t).nombre) + '</span></button>';
+        }).join('') + '</div><p class="font-body-lg text-body-lg font-bold text-on-surface px-1" id="cat-ayuda"></p></div>' : '') +
+      '<div class="flex flex-col gap-space-sm">' +
       crits.map(function (c) {
         var v = voto.crit[c.id];
-        return '<div class="criteria-card rounded-DEFAULT bg-surface-container-lowest p-space-md shadow-sm transition-all flex flex-col gap-2' + (v == null ? ' sin-votar' : '') + '" data-c="' + c.id + '">' +
-          '<div class="flex items-center justify-between"><div class="flex items-center gap-2 min-w-0">' + ic(c.icono, 'text-[22px] text-primary') +
-          '<div class="flex flex-col min-w-0"><label class="font-label-prominent text-label-prominent text-on-surface" for="r-' + c.id + '">' + esc(c.nombre) + '</label>' +
-          '<span class="font-body-sm text-body-sm text-tertiary font-semibold truncate" id="p-' + c.id + '"></span></div></div>' +
-          '<span class="font-score-display text-score-display text-primary-container" id="o-' + c.id + '"></span></div>' +
-          '<input class="rating-slider w-full h-2 rounded-full appearance-none cursor-pointer bg-surface-container-highest accent-primary-container" type="range" id="r-' + c.id + '" min="0" max="10" step="1" value="' + (v == null ? 5 : v) + '">' +
-          '<div class="flex items-center justify-between"><span class="font-label-micro text-label-micro text-on-surface-variant">' + esc(c.ayuda) + '</span>' +
-          '<button type="button" class="no-se px-2.5 py-1 rounded-full bg-surface-container-highest text-on-surface-variant font-label-badge text-label-badge flex-shrink-0 ml-2" data-c="' + c.id + '">No lo sé</button></div></div>';
+        return '<div class="criteria-card rounded-DEFAULT bg-surface-container-lowest p-space-md shadow-sm transition-all flex flex-col gap-3' + (v == null ? ' sin-votar' : '') + '" data-c="' + c.id + '">' +
+          '<div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2 min-w-0">' + ic(c.icono, 'text-[28px] text-primary flex-shrink-0') +
+          '<div class="flex flex-col min-w-0"><label class="font-headline-md text-headline-md text-on-surface" for="r-' + c.id + '">' + esc(c.nombre) + '</label>' +
+          '<span class="font-body-md text-body-md text-tertiary font-semibold" id="p-' + c.id + '"></span></div></div>' +
+          '<span class="font-display-hero text-display-hero text-primary-container flex-shrink-0" id="o-' + c.id + '"></span></div>' +
+          '<input class="rating-slider w-full h-3 rounded-full appearance-none cursor-pointer bg-surface-container-highest accent-primary-container" type="range" id="r-' + c.id + '" min="0" max="10" step="1" value="' + (v == null ? 5 : v) + '">' +
+          '<button type="button" class="no-se self-end min-h-12 px-5 rounded-full bg-surface-container-highest text-on-surface font-body-md text-body-md font-bold" data-c="' + c.id + '">No lo sé</button></div>';
       }).join('') + '</div>' +
-      '<div class="flex flex-col gap-space-sm pt-space-xs"><h2 class="font-label-prominent text-label-prominent text-on-surface uppercase tracking-wider px-1">Veredicto flash (1 toque)</h2>' +
+      (cats.length > 1 ? '<button class="boton-off w-full h-16 rounded-full bg-primary-container text-on-primary-container font-headline-md text-headline-md flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform" id="cat-siguiente" type="button"></button>' : '') +
+      '<div class="flex flex-col gap-space-md" id="paso-final"><div class="flex flex-col gap-space-sm pt-space-xs">' +
       S.RAPIDAS.map(function (r) {
-        return '<div class="rounded-DEFAULT bg-surface-container-low p-space-md shadow-xs flex flex-col gap-2"><span class="font-body-md text-body-md font-semibold text-on-surface" id="q-' + r.id + '">' + r.pregunta + '</span>' +
+        return '<div class="rounded-DEFAULT bg-surface-container-low p-space-md shadow-xs flex flex-col gap-3"><span class="font-body-lg text-body-lg font-bold text-on-surface" id="q-' + r.id + '">' + r.pregunta + '</span>' +
           '<div class="flex items-center gap-2 flex-wrap" role="group" aria-labelledby="q-' + r.id + '">' + r.opciones.map(function (o) {
             var on = voto.rapidas[r.id] === o[0];
             return '<button type="button" class="' + (on ? TAG_ON : TAG_OFF) + '" data-r="' + r.id + '" data-v="' + o[0] + '" aria-pressed="' + on + '"><span>' + o[1] + '</span></button>';
           }).join('') + '</div></div>';
       }).join('') + '</div>' +
-      '<div class="flex flex-col gap-2 pt-space-xs"><div class="flex items-center justify-between px-1"><label class="font-label-prominent text-label-prominent text-on-surface uppercase tracking-wider" for="review-opinion">Comentario libre</label>' +
-      '<span class="font-label-micro text-label-micro text-on-surface-variant">Opcional</span></div>' +
-      '<p class="font-body-sm text-body-sm text-on-surface-variant px-1">Lo que le dirías a un amigo: si lo recomiendas y para quién. Sin insultos ni nombres de trabajadores. Se publica al momento; si no respeta estas normas, lo quitamos.</p>' +
-      (previo.retirado ? '<p class="font-body-sm text-body-sm text-error font-semibold px-1">Este comentario se retiró por no cumplir las normas. Si lo cambias, se vuelve a publicar.</p>' : '') +
-      '<div class="relative rounded-DEFAULT bg-surface-container-lowest p-space-md shadow-sm"><textarea class="w-full bg-transparent font-body-md text-body-md text-on-surface placeholder:text-outline/70 focus:outline-none resize-none" id="review-opinion" maxlength="300" rows="3" placeholder="Raciones, mejor plato, consejos para aparcar…">' + esc(voto.comentario || '') + '</textarea>' +
-      '<div class="flex items-center justify-between mt-2 pt-2 text-on-surface-variant"><div class="flex items-center gap-1 font-label-micro text-label-micro text-tertiary">' + ic('lock', 'text-[14px]') + '<span>Nadie ve tu nombre ni tu correo</span></div>' +
-      '<span class="font-label-micro text-label-micro" id="char-count">' + (voto.comentario || '').length + '/300</span></div></div></div>' +
-      '<div class="pt-space-sm pb-space-md"><button class="boton-off w-full h-14 rounded-full bg-primary-container text-on-primary-container font-headline-md text-headline-md flex items-center justify-center gap-space-sm shadow-md active:scale-95 transition-transform hover:shadow-lg" id="submit-vote-btn" type="button">' +
-      ic('send', 'text-[24px]', true) + '<span>Publicar mi voto</span></button>' +
-      '<p class="font-label-prominent text-label-prominent text-center text-error mt-2" id="falta" role="alert"></p>' +
-      '<p class="font-label-micro text-label-micro text-center text-on-surface-variant mt-2">Tu voto cuenta una sola vez por sitio y puedes cambiarlo cuando quieras.</p></div>' +
+      '<div class="flex flex-col gap-2 pt-space-xs"><label class="font-body-lg text-body-lg font-bold text-on-surface px-1" for="review-opinion">Comentario (si quieres)</label>' +
+      (previo.retirado ? '<p class="font-body-md text-body-md text-error font-semibold px-1">Se retiró por no cumplir las normas. Si lo cambias, se vuelve a publicar.</p>' : '') +
+      '<div class="relative rounded-DEFAULT bg-surface-container-lowest p-space-md shadow-sm"><textarea class="w-full bg-transparent font-body-lg text-body-lg text-on-surface placeholder:text-on-surface-variant focus:outline-none resize-none" id="review-opinion" maxlength="300" rows="3" placeholder="Sin insultos ni nombres de trabajadores">' + esc(voto.comentario || '') + '</textarea>' +
+      '<div class="flex items-center justify-between mt-2 pt-2 text-on-surface-variant font-body-md text-body-md"><div class="flex items-center gap-1">' + ic('lock', 'text-[20px]') + '<span>Anónimo</span></div>' +
+      '<span id="char-count">' + (voto.comentario || '').length + '/300</span></div></div></div>' +
+      '<div class="pt-space-sm pb-space-md"><button class="boton-off w-full h-16 rounded-full bg-primary-container text-on-primary-container font-headline-md text-headline-md flex items-center justify-center gap-space-sm shadow-md active:scale-95 transition-transform hover:shadow-lg" id="submit-vote-btn" type="button">' +
+      ic('send', 'text-[26px]', true) + '<span>Publicar</span></button></div></div>' +
+      '<p class="font-body-lg text-body-lg font-bold text-center text-error" id="falta" role="alert"></p>' +
       '<div class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-md hidden flex items-center justify-center p-gutter" id="vote-modal-success"><div class="w-full max-w-sm rounded-lg bg-surface-container-lowest p-space-lg shadow-xl flex flex-col items-center text-center animate-screen-enter">' +
       '<div class="w-16 h-16 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed mb-space-sm shadow-sm">' + ic('how_to_reg', 'text-[36px]', true) + '</div>' +
-      '<h3 class="font-headline-md text-headline-md text-on-surface">¡Voto publicado!</h3><p class="font-body-md text-body-md text-on-surface-variant mt-1">Tu nota para <strong class="text-on-surface">' + esc(l.nombre) + '</strong> ya cuenta en Salimos.</p>' +
-      '<div class="mt-space-md p-space-sm rounded-DEFAULT bg-surface-container flex items-center justify-between w-full"><span class="font-body-sm text-body-sm text-on-surface-variant">Tu nota media:</span><span class="font-score-display text-score-display text-primary" id="modal-final-score"></span></div>' +
-      '<a class="mt-space-lg w-full h-12 rounded-full bg-secondary text-on-secondary font-label-prominent text-label-prominent flex items-center justify-center active:scale-95 transition-all" href="#/local/' + id + '">Ver la ficha</a>' +
-      '<a class="mt-space-sm w-full h-12 rounded-full bg-surface-container-high text-on-surface font-label-prominent text-label-prominent flex items-center justify-center active:scale-95 transition-all" href="#/explorar">Continuar explorando</a></div></div></div>';
+      '<h3 class="font-headline-md text-headline-md text-on-surface">¡Publicado!</h3>' +
+      '<div class="mt-space-md p-space-sm rounded-DEFAULT bg-surface-container flex items-center justify-between w-full"><span class="font-body-lg text-body-lg text-on-surface">Tu nota</span><span class="font-score-display text-score-display text-primary" id="modal-final-score"></span></div>' +
+      '<a class="mt-space-lg w-full h-14 rounded-full bg-secondary text-on-secondary font-body-lg text-body-lg font-bold flex items-center justify-center active:scale-95 transition-all" href="#/local/' + id + '">Ver el sitio</a>' +
+      '<a class="mt-space-sm w-full h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center active:scale-95 transition-all" href="#/explorar">Seguir</a></div></div></div>';
 
     function valor(cid) {
       var o = cat !== l.tipo && voto.pc[cat] ? voto.pc[cat][cid] : null;
@@ -706,7 +720,7 @@
       var v = valor(cid);
       var r = document.getElementById('r-' + cid);
       document.getElementById('o-' + cid).textContent = v == null ? '–' : v;
-      document.getElementById('p-' + cid).textContent = v == null ? 'Sin votar · desliza para votar' : PALABRA[v] + ' · ' + v;
+      document.getElementById('p-' + cid).textContent = v == null ? 'Sin votar' : PALABRA[v];
       r.setAttribute('aria-valuetext', v == null ? 'Sin votar' : v + ', ' + PALABRA[v]);
       r.value = v == null ? 5 : v;
       r.closest('.criteria-card').classList.toggle('sin-votar', v == null);
@@ -714,17 +728,25 @@
       revisar();
     }
     function revisar() {
-      var n = Object.keys(voto.crit).length, falta = Math.max(0, 3 - n);
+      var n = Object.keys(voto.crit).length, falta = Math.max(0, 3 - n), sig = document.getElementById('cat-siguiente');
       document.getElementById('submit-vote-btn').disabled = falta > 0;
-      document.getElementById('falta').textContent = falta ? 'Vota al menos 3 cosas para publicar (te ' + (falta === 1 ? 'falta 1' : 'faltan ' + falta) + ').' : '';
+      if (sig) sig.disabled = falta > 0;
+      document.getElementById('falta').textContent = falta ? (falta === 1 ? 'Falta 1 nota.' : 'Faltan ' + falta + ' notas.') : '';
     }
     function pintarCategoria() {
       vista.querySelectorAll('[data-cat]').forEach(function (b) { var a = b.dataset.cat === cat; b.className = a ? TAG_ON : TAG_OFF; b.setAttribute('aria-pressed', a); });
-      var ayuda = document.getElementById('cat-ayuda');
-      if (ayuda) ayuda.textContent = cat === l.tipo ? 'Esta es tu nota general.' : 'Empieza con tu nota general. Mueve lo que sea distinto como ' + tipo(cat).nombre.toLowerCase() + '.';
+      var paso = cats.indexOf(cat), ayuda = document.getElementById('cat-ayuda'), sig = document.getElementById('cat-siguiente'), ultimo = paso === cats.length - 1;
+      if (ayuda) ayuda.textContent = 'Paso ' + (paso + 1) + ' de ' + cats.length + ': ' + tipo(cat).nombre;
+      if (sig) { sig.classList.toggle('hidden', ultimo); if (!ultimo) sig.innerHTML = '<span>Siguiente: ' + esc(tipo(cats[paso + 1]).nombre) + '</span>' + ic('arrow_forward', 'text-[26px]'); }
+      document.getElementById('paso-final').classList.toggle('hidden', !ultimo);
       crits.forEach(function (c) { pintar(c.id); });
     }
     vista.querySelectorAll('[data-cat]').forEach(function (b) { b.onclick = function () { cat = b.dataset.cat; pintarCategoria(); }; });
+    var sig = document.getElementById('cat-siguiente');
+    if (sig) sig.onclick = function () {
+      cat = cats[cats.indexOf(cat) + 1]; pintarCategoria();
+      document.getElementById('categorias').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
     pintarCategoria();
     vista.querySelectorAll('input[type=range]').forEach(function (r) { r.oninput = function () { marcar(r.id.slice(2), +r.value); }; });
     vista.querySelectorAll('.no-se').forEach(function (b) { b.onclick = function () { marcar(b.dataset.c, null); }; });
@@ -752,20 +774,23 @@
       if (r.error) { b.disabled = false; b.innerHTML = antes; document.getElementById('falta').textContent = textoError(r.error); return; }
       document.getElementById('modal-final-score').textContent = media(true);
       await Promise.all([cargarLocales(), cargarYo()]);
-      document.getElementById('vote-modal-success').classList.remove('hidden');
+      /* Al body: dentro de la pantalla, con su animación, no se centraría en lo que se ve. */
+      var hecho = document.getElementById('vote-modal-success');
+      document.body.appendChild(hecho); hecho.classList.remove('hidden');
+      hecho.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { hecho.remove(); }); });
     };
   };
 
   /* Formularios con las piezas del de «Recomendar» de Stitch. */
-  var INPUT = 'w-full h-13 px-space-lg rounded-full bg-surface-container-lowest text-on-surface font-body-md text-body-md shadow-sm placeholder:text-outline-variant focus:outline-none focus:bg-surface-container-low transition-all';
-  var BOTON = 'boton-off w-full h-14 rounded-full bg-primary-container text-on-primary-container font-label-prominent text-body-lg uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform';
+  var INPUT = 'w-full h-16 px-space-lg rounded-full bg-surface-container-lowest text-on-surface font-body-md text-body-md shadow-sm placeholder:text-outline-variant focus:outline-none focus:bg-surface-container-low transition-all';
+  var BOTON = 'boton-off w-full h-16 rounded-full bg-primary-container text-on-primary-container font-headline-md text-headline-md flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform';
   function etiquetaCampo(icono, txt, para, extra) {
-    return '<label class="font-label-prominent text-label-prominent text-on-surface flex items-center justify-between"' + (para ? ' for="' + para + '"' : '') + '><span class="flex items-center gap-1.5">' + ic(icono, 'text-[18px] text-primary') + txt + '</span>' +
+    return '<label class="font-body-lg text-body-lg font-bold text-on-surface flex items-center justify-between"' + (para ? ' for="' + para + '"' : '') + '><span class="flex items-center gap-1.5">' + ic(icono, 'text-[24px] text-primary') + txt + '</span>' +
       (extra ? '<span class="font-label-micro text-label-micro text-on-surface-variant">' + extra + '</span>' : '') + '</label>';
   }
   function casilla(id, html) {
-    return '<div class="p-space-md rounded-DEFAULT bg-secondary-fixed/50 flex items-start gap-3 shadow-sm"><input class="mt-1 w-5 h-5 rounded-md accent-secondary text-secondary cursor-pointer flex-shrink-0" id="' + id + '" type="checkbox">' +
-      '<label class="font-body-sm text-body-sm text-on-secondary-fixed cursor-pointer" for="' + id + '">' + html + '</label></div>';
+    return '<div class="p-space-md rounded-DEFAULT bg-secondary-fixed/50 flex items-start gap-3 shadow-sm"><input class="mt-0.5 w-7 h-7 rounded-md accent-secondary text-secondary cursor-pointer flex-shrink-0" id="' + id + '" type="checkbox">' +
+      '<label class="font-body-lg text-body-lg text-on-secondary-fixed cursor-pointer" for="' + id + '">' + html + '</label></div>';
   }
   /* Banner oscuro de «Recomendar» de Stitch. */
   function bannerOscuro(icono, ante, titulo, texto, pacto) {
@@ -851,25 +876,23 @@
   };
 
   P.recomendar = function () {
-    seccion('Recomendar');
+    seccion('Añadir');
     var puede = !!usuario() && YO.perfil;
     if (!puede) { guardar('vuelta', '#/recomendar'); }
     vista.innerHTML = '<div class="flex flex-col w-full px-gutter pt-space-md pb-8 gap-space-lg animate-screen-enter">' +
-      bannerOscuro('add_location_alt', 'Lo propone la gente', 'Recomienda un Local', '¿Conoces un sitio de Gran Canaria que merece estar aquí y que la gente lo vote? Lo revisamos y lo damos de alta.',
-        ['Gratis y sin pagos', 'Darlo de alta no cuesta nada y ningún local puede pagar por entrar ni por salir.']) +
-      (puede ? '' : '<a class="p-space-md rounded-DEFAULT bg-primary-fixed text-on-primary-fixed flex items-center gap-3 shadow-sm font-label-prominent text-label-prominent" href="#/entrar">' + ic('login', 'text-[22px]') + 'Para recomendar hace falta entrar con tu correo. Toca aquí.</a>') +
+      cabeceraSeccion('Añadir un sitio') +
+      (puede ? '' : '<a class="min-h-16 p-space-md rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center gap-3 shadow-sm font-body-lg text-body-lg font-bold" href="#/entrar">' + ic('login', 'text-[26px]') + 'Entrar con tu correo</a>') +
       '<form class="flex flex-col gap-space-lg" id="fr" novalidate>' +
-      '<div class="flex flex-col gap-1.5">' + etiquetaCampo('storefront', 'Nombre del establecimiento *', 'rn', 'Obligatorio') +
-      '<div class="relative"><input class="' + INPUT + '" type="text" id="rn" placeholder="Ej: Bar Avenida" maxlength="80">' + ic('edit', 'absolute right-4 top-1/2 -translate-y-1/2 text-outline text-[20px]') + '</div></div>' +
-      '<div class="flex flex-col gap-2">' + etiquetaCampo('local_bar', 'Tipo de ocio o gastronomía *') + '<div class="flex flex-wrap gap-2">' +
-      S.TIPOS.map(function (t) { return '<button type="button" class="category-chip px-3.5 py-2 rounded-full font-label-prominent text-label-prominent bg-surface-container-high text-on-surface transition-all active:scale-95 flex items-center gap-1.5 shadow-sm" data-t="' + t.id + '" aria-pressed="false">' + ic(t.icono, 'text-[18px]') + '<span>' + t.nombre + '</span></button>'; }).join('') + '</div></div>' +
-      '<div class="flex flex-col gap-1.5">' + etiquetaCampo('pin_drop', 'Municipio de Gran Canaria *', 'rm') + '<div class="relative"><select class="' + INPUT + ' appearance-none" id="rm"><option value="">Selecciona el municipio…</option>' +
-      S.MUNICIPIOS.map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('') + '</select>' + ic('expand_more', 'absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[22px]') + '</div></div>' +
-      '<div class="flex flex-col gap-1.5">' + etiquetaCampo('link', 'Dirección o enlace del mapa', 'rd', 'Opcional') + '<input class="' + INPUT + '" type="text" id="rd" placeholder="Calle, número o enlace" maxlength="200"></div>' +
-      casilla('rno', '<strong>Declaración:</strong> no trabajo en este sitio ni gano nada por recomendarlo. Es una recomendación de verdad, de haber ido.') +
-      '<div class="flex flex-col gap-2 pt-2"><button class="' + BOTON + '" type="submit"' + (puede ? '' : ' disabled') + '>' + ic('send', 'text-[22px]') + 'Enviar recomendación</button>' +
-      '<p class="font-label-prominent text-label-prominent text-center text-error" id="er" role="alert"></p>' +
-      '<p class="font-label-micro text-label-micro text-center text-on-surface-variant">Lo revisamos antes de abrirlo a votación.</p></div></form></div>';
+      '<div class="flex flex-col gap-2">' + etiquetaCampo('storefront', 'Nombre', 'rn') +
+      '<input class="' + INPUT + '" type="text" id="rn" maxlength="80"></div>' +
+      '<div class="flex flex-col gap-2">' + etiquetaCampo('category', 'Qué es') + '<div class="grid grid-cols-2 gap-2">' +
+      S.TIPOS.map(function (t) { return '<button type="button" class="category-chip min-h-16 px-3 py-2 rounded-lg font-body-lg text-body-lg font-bold bg-surface-container-high text-on-surface transition-all active:scale-95 flex items-center gap-2 text-left shadow-sm" data-t="' + t.id + '" aria-pressed="false">' + ic(t.icono, 'text-[26px] flex-shrink-0') + '<span class="min-w-0">' + t.nombre + '</span></button>'; }).join('') + '</div></div>' +
+      '<div class="flex flex-col gap-2">' + etiquetaCampo('pin_drop', 'Municipio', 'rm') + '<div class="relative"><select class="' + INPUT + ' appearance-none" id="rm"><option value="">Elegir</option>' +
+      S.MUNICIPIOS.map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('') + '</select>' + ic('expand_more', 'absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[28px]') + '</div></div>' +
+      '<div class="flex flex-col gap-2">' + etiquetaCampo('link', 'Dirección (si la sabes)', 'rd') + '<input class="' + INPUT + '" type="text" id="rd" maxlength="200"></div>' +
+      casilla('rno', 'No trabajo aquí ni gano nada por recomendarlo.') +
+      '<div class="flex flex-col gap-2 pt-2"><button class="' + BOTON + '" type="submit"' + (puede ? '' : ' disabled') + '>' + ic('send', 'text-[26px]') + 'Enviar</button>' +
+      '<p class="font-body-lg text-body-lg font-bold text-center text-error" id="er" role="alert"></p></div></form></div>';
     var tipoSel = '', ON = 'bg-secondary text-on-secondary', OFF = 'bg-surface-container-high text-on-surface';
     vista.querySelectorAll('[data-t]').forEach(function (b) {
       b.onclick = function () {
@@ -880,17 +903,17 @@
     document.getElementById('fr').onsubmit = async function (e) {
       e.preventDefault();
       var er = document.getElementById('er'), nombre = document.getElementById('rn').value.trim(), mun = document.getElementById('rm').value;
-      if (nombre.length < 2) { er.textContent = 'Falta el nombre del sitio.'; return; }
-      if (!tipoSel) { er.textContent = 'Elige qué tipo de sitio es.'; return; }
-      if (!mun) { er.textContent = 'Elige el municipio.'; return; }
-      if (!document.getElementById('rno').checked) { er.textContent = 'Marca la declaración: aquí no se recomienda el sitio propio.'; return; }
+      if (nombre.length < 2) { er.textContent = 'Falta el nombre.'; return; }
+      if (!tipoSel) { er.textContent = 'Falta qué es.'; return; }
+      if (!mun) { er.textContent = 'Falta el municipio.'; return; }
+      if (!document.getElementById('rno').checked) { er.textContent = 'Marca la casilla.'; return; }
       var bt = this.querySelector('button[type=submit]'); bt.disabled = true;
       var r = await sb.rpc('salimos_recomendar', { p_nombre: nombre, p_tipo: tipoSel, p_municipio: mun, p_direccion: document.getElementById('rd').value.trim() });
       if (r.error) { bt.disabled = false; er.textContent = textoError(r.error); return; }
       vista.innerHTML = '<div class="px-gutter pt-space-lg pb-8 animate-screen-enter"><div class="rounded-lg bg-surface-container-lowest p-space-lg shadow-xl flex flex-col items-center text-center">' +
         '<div class="w-16 h-16 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed mb-space-sm shadow-sm">' + ic('how_to_reg', 'text-[36px]', true) + '</div>' +
-        '<h3 class="font-headline-md text-headline-md text-on-surface">Gracias</h3><p class="font-body-md text-body-md text-on-surface-variant mt-1">Revisamos «' + esc(nombre) + '» y, si es un sitio de Gran Canaria abierto al público, lo damos de alta. Te avisamos por correo.</p>' +
-        '<a class="mt-space-lg w-full h-12 rounded-full bg-secondary text-on-secondary font-label-prominent text-label-prominent flex items-center justify-center active:scale-95 transition-all" href="#/explorar">Continuar explorando</a></div></div>';
+        '<h3 class="font-headline-md text-headline-md text-on-surface">Gracias</h3><p class="font-body-lg text-body-lg text-on-surface mt-1">Lo revisamos y te avisamos por correo.</p>' +
+        '<a class="mt-space-lg w-full h-14 rounded-full bg-secondary text-on-secondary font-body-lg text-body-lg font-bold flex items-center justify-center active:scale-95 transition-all" href="#/explorar">Seguir</a></div></div>';
     };
   };
 
@@ -999,15 +1022,13 @@
         : 'los ajustes del navegador, en el candado junto a la dirección';
       return '<div class="flex flex-col gap-space-sm p-space-md rounded-lg bg-surface-container-lowest shadow-md">' +
         '<div class="flex items-center gap-3"><span class="w-11 h-11 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center flex-shrink-0">' + ic('location_off', 'text-[22px]', true) + '</span>' +
-        '<span class="flex flex-col min-w-0"><span class="font-label-prominent text-[16px] leading-[20px] text-on-surface">Activa tu ubicación</span>' +
-        '<span class="font-body-sm text-body-sm text-on-surface-variant">Así te enseñamos lo que tienes cerca. Tu ubicación no sale de tu móvil.</span></span></div>' +
+        '<span class="font-body-lg text-body-lg font-bold text-on-surface">Ver lo que tienes cerca</span></div>' +
         '<button type="button" class="' + BOTON + '" data-reubicar>' + ic('my_location', 'text-[20px]') + ' Activar ubicación</button>' +
         (UBIC.intentos ? '<p class="font-body-sm text-body-sm text-on-surface">Si no te sale la pregunta, actívala en ' + donde + '.</p>' : '') + '</div>';
     }
-    return '<a href="#/cerca" data-cerca class="flex items-center gap-3 p-space-md rounded-lg bg-gradient-to-br from-secondary via-on-secondary-container to-secondary text-on-secondary shadow-md active:scale-[0.98] transition-transform">' +
+    return '<a href="#/cerca" data-cerca class="flex items-center gap-3 min-h-16 p-space-sm rounded-lg bg-gradient-to-br from-secondary via-on-secondary-container to-secondary text-on-secondary shadow-md active:scale-[0.98] transition-transform">' +
       '<span class="w-11 h-11 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center flex-shrink-0">' + ic('near_me', 'text-[22px]', true) + '</span>' +
-      '<span class="flex flex-col min-w-0 flex-1"><span class="font-label-prominent text-label-prominent">Dónde salir cerca de mí</span>' +
-      '<span class="font-label-micro text-label-micro text-secondary-fixed">Ordenado por distancia. Tu ubicación no sale de tu móvil.</span></span>' + ic('chevron_right', 'text-[22px] text-secondary-fixed') + '</a>';
+      '<span class="font-headline-md text-headline-md flex-1 min-w-0">Cerca de mí</span>' + ic('chevron_right', 'text-[22px] text-secondary-fixed') + '</a>';
   }
   function repintarCerca() { document.querySelectorAll('[data-ubic]').forEach(function (d) { d.innerHTML = htmlCerca(); }); }
   /* Si estás en otro destino con sitios, te lo cambiamos. Devuelve true si ha cambiado. */
@@ -1047,7 +1068,7 @@
   var filtroCerca = '';
   P.cerca = async function () {
     seccion('Cerca de mí');
-    var cab = cabeceraSeccion('Con tu ubicación, solo en tu móvil', 'Cerca de ti', 'Los sitios más cercanos a donde estás ahora, del más cerca al más lejos.');
+    var cab = cabeceraSeccion('Cerca de ti');
     if (!POS) {
       vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' + cab +
         '<p class="p-space-md rounded-lg bg-surface-container-lowest shadow-md font-body-md text-body-md text-on-surface-variant" aria-busy="true">Buscando dónde estás…</p></div>';
@@ -1089,17 +1110,14 @@
   function checkinVivo(id) { var h = YO.checkins[id]; return !!h && new Date(h) > new Date(); }
   function hora(iso) { return new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }); }
   function tarjetaCheckin(l) {
-    var vivo = checkinVivo(l.id), verificado = (votosDe()[l.id] || {}).verificado;
-    var cuantos = l.verificados ? '<span class="font-label-badge text-label-badge text-on-secondary-fixed bg-secondary-fixed/60 px-2 py-0.5 rounded-full flex-shrink-0">' + l.verificados + (l.verificados === 1 ? ' verificado' : ' verificados') + '</span>' : '';
-    var cuerpo = vivo || verificado
-      ? '<p class="font-body-sm text-body-sm text-on-surface">' + (verificado ? 'Tu voto de este sitio está <strong>verificado</strong>: lleva el sello «Estuvo allí».' : 'Check-in hecho. Tu voto saldrá <strong>verificado</strong> si votas antes de las ' + hora(YO.checkins[l.id]) + ' de mañana.') + '</p>' +
-        (verificado ? '' : '<a class="' + BOTON + '" href="#/votar/' + l.id + '">' + ic('how_to_vote', 'text-[20px]') + ' Votar ahora</a>')
-      : '<p class="font-body-sm text-body-sm text-on-surface-variant">¿Estás aquí? Haz check-in y tu voto saldrá con el sello <strong class="text-on-surface">«Estuvo allí»</strong>. Tienes 24 horas para votar: en una discoteca, check-in en la puerta y votas al día siguiente.</p>' +
-        '<button type="button" class="' + BOTON + '" id="checkin">' + ic('where_to_vote', 'text-[20px]') + ' Estoy aquí · check-in</button>' +
-        '<p class="font-label-micro text-label-micro text-on-surface-variant text-center">Usamos tu ubicación solo para ver que estás a menos de 150 m. No la guardamos.</p>';
-    return '<div class="px-gutter pb-space-lg"><div class="rounded-lg bg-surface-container-lowest shadow-md p-space-md flex flex-col gap-space-sm">' +
-      '<div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2">' + ic('verified', 'text-[22px] text-tertiary', true) +
-      '<h3 class="font-headline-md text-headline-md text-on-surface">Voto verificado</h3></div>' + cuantos + '</div>' + cuerpo + '</div></div>';
+    var mio = votosDe()[l.id] || {}, vivo = checkinVivo(l.id);
+    if (mio.fijo || mio.verificado) return '';
+    var cuerpo = vivo
+      ? '<p class="font-body-lg text-body-lg text-on-surface">Check-in hecho. Vota antes de las ' + hora(YO.checkins[l.id]) + ' de mañana.</p>' +
+        '<a class="' + BOTON + '" href="#/votar/' + l.id + '">' + ic('how_to_vote', 'text-[24px]') + ' Votar</a>'
+      : '<button type="button" class="' + BOTON + '" id="checkin">' + ic('where_to_vote', 'text-[24px]') + ' Estoy aquí</button>' +
+        '<p class="font-body-md text-body-md text-on-surface-variant text-center">No guardamos tu ubicación.</p>';
+    return '<div class="px-gutter pb-space-lg"><div class="flex flex-col gap-space-sm">' + cuerpo + '</div></div>';
   }
   async function hacerCheckin(l, boton) {
     if (!usuario() || !YO.perfil) { guardar('vuelta', '#/local/' + l.id); location.hash = '#/entrar'; return; }
@@ -1118,10 +1136,11 @@
     P.local(l.id);
   }
   function avisoVerificado(l, previo) {
+    if (previo.fijo) return '';
     if (checkinVivo(l.id) || previo.verificado)
-      return '<div class="flex items-center gap-2 p-space-sm rounded-DEFAULT bg-tertiary-container/30 text-on-surface font-body-sm text-body-sm">' + ic('verified', 'text-[20px] text-tertiary', true) + '<span>Tu voto sale <strong>verificado</strong>: «Estuvo allí».</span></div>';
-    return '<a href="#/local/' + l.id + '" class="flex items-center gap-2 p-space-sm rounded-DEFAULT bg-surface-container-high text-on-surface font-body-sm text-body-sm">' + ic('where_to_vote', 'text-[20px] text-secondary') +
-      '<span>Voto sin verificar. ' + (YO.cuentanTodos === false ? 'En la nota solo cuentan los votos con check-in.' : 'Desde el 1 de diciembre, en la nota solo contarán los votos con check-in.') + ' <strong class="text-primary">Haz check-in desde la ficha</strong></span></a>';
+      return '<div class="flex items-center gap-2 p-space-sm rounded-DEFAULT bg-tertiary-container/30 text-on-surface font-body-md text-body-md font-bold">' + ic('verified', 'text-[24px] text-tertiary', true) + '<span>Voto verificado</span></div>';
+    return '<a href="#/local/' + l.id + '" class="flex items-center gap-2 p-space-sm rounded-DEFAULT bg-surface-container-high text-on-surface font-body-md text-body-md">' + ic('where_to_vote', 'text-[24px] text-secondary') +
+      '<span>' + (YO.cuentanTodos === false ? 'Sin check-in, tu voto no cuenta.' : 'Desde el 1 de diciembre, sin check-in tu voto no cuenta.') + ' <strong class="text-primary">Hacer check-in</strong></span></a>';
   }
 
   /* ───────── fotos ─────────
