@@ -151,6 +151,24 @@
       (c.votos ? c.votos + (c.votos === 1 ? ' voto' : ' votos') : 'Sin votos') + '</span></a>';
   }
 
+  /* Salimos es gratis y lleva al Grupo Saneas: la tarjeta de Saneas (asesoría nutricional) y el botón a las demás apps.
+     Va en el verde de Saneas para que nadie la confunda con un local. */
+  var SANEAS_WEB = 'https://saneas.es';
+  function tarjetaSaneas(titulo, texto) {
+    return '<a href="' + SANEAS_WEB + '" target="_blank" rel="noopener" class="w-full flex flex-col gap-2 p-space-md rounded-lg bg-[#19352d] text-white text-left shadow-md active:scale-[0.99] transition-transform" data-saneas>' +
+      '<span class="font-label-micro text-label-micro uppercase tracking-wider font-bold text-[#f2c45c]">Del Grupo Saneas</span>' +
+      '<span class="font-headline-md text-headline-md leading-tight">' + titulo + '</span>' +
+      '<span class="font-body-lg text-body-lg text-white/90">' + texto + '</span>' +
+      '<span class="mt-1 h-14 rounded-full bg-white text-[#19352d] font-body-lg text-body-lg font-bold flex items-center justify-center gap-2">' + ic('eco', 'text-[24px]', true) + 'Conocer Saneas</span></a>';
+  }
+  function botonAppsGrupo() {
+    return '<button type="button" class="w-full min-h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center gap-2 px-4 active:scale-95 transition-all" data-apps-grupo>' +
+      ic('apps', 'text-[24px] text-secondary') + '¿Conoces las demás apps del Grupo Saneas?</button>';
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-apps-grupo]');
+    if (b && window.GrupoSaneas) GrupoSaneas.abrirMenu();
+  });
   function cabeceraSeccion(titulo) {
     return '<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface px-1">' + titulo + '</h1>';
   }
@@ -332,7 +350,10 @@
     var caja = document.getElementById('lista'); if (!caja) return;
     var lista = ordenados(filtrados());
     document.getElementById('cuantos').textContent = lista.length + (lista.length === 1 ? ' sitio' : ' sitios');
-    caja.innerHTML = lista.length ? lista.map(function (x) { return filaSalir(x.l, x.v, x.n, x.km); }).join('')
+    var filas = lista.map(function (x) { return filaSalir(x.l, x.v, x.n, x.km); });
+    /* Una sola tarjeta de Saneas, a mitad de lista (como mucho detrás del sexto sitio, para que se vea). */
+    if (filas.length >= 2) filas.splice(Math.min(6, Math.floor(filas.length / 2)), 0, tarjetaSaneas('¿Sales mucho a comer?', 'Saneas te enseña a comer fuera sin engordar. Asesoría nutricional en Gran Canaria.'));
+    caja.innerHTML = lista.length ? filas.join('')
       : '<p class="p-space-md rounded-lg bg-surface-container-low font-body-lg text-body-lg text-on-surface">No hay ninguno así. Quita algún filtro.</p>';
   }
   /* Fila de la lista de Salir: el nombre entero, dónde está, qué es y su nota bien grande. */
@@ -464,6 +485,8 @@
         }).join('') + '</div></div>' : '') +
       (l.comentarios ? '<div class="px-gutter pb-space-xl" id="comentarios" aria-busy="true"><div class="flex items-center justify-between mb-space-sm"><h3 class="font-headline-md text-headline-md text-on-surface">Comentarios</h3>' +
         '<span class="font-label-badge text-label-badge text-secondary">' + l.comentarios + (l.comentarios === 1 ? ' comentario' : ' comentarios') + '</span></div><div class="flex flex-col gap-space-sm lista"><p class="font-body-sm text-body-sm text-on-surface-variant">Cargando comentarios…</p></div></div>' : '') +
+      ([l.tipo, l.tipo2, l.tipo3].some(function (t) { return t === 'restaurante' || t === 'guachinche'; })
+        ? '<div class="px-gutter pb-space-lg">' + tarjetaSaneas('Comer fuera sin salirte de tu plan', 'Saneas, asesoría nutricional en Gran Canaria.') + '</div>' : '') +
       '<div class="sticky bottom-0 inset-x-0 bg-surface-container-lowest/90 backdrop-blur-xl p-space-md shadow-[0_-8px_24px_rgba(0,0,0,0.06)] z-40"><div class="flex items-center gap-space-sm max-w-lg mx-auto">' +
       '<a class="flex-1 h-16 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-transform active:scale-95 shadow-sm" href="' + mapa + '" target="_blank" rel="noopener">' + ic('map', 'text-[20px] text-secondary') + '<span>Mapa</span></a>' +
       '<a class="flex-[1.6] h-16 rounded-full bg-primary-container text-on-surface font-headline-md text-[20px] flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95 hover:brightness-105" href="#/votar/' + l.id + '">' + ic('how_to_vote', 'text-[20px]') + '<span>' + (c.mio ? 'Cambiar mi voto' : 'Votar') + '</span></a></div></div></div>';
@@ -605,12 +628,13 @@
       '<div class="pt-space-sm pb-space-md"><button class="boton-off w-full h-16 rounded-full bg-primary-container text-on-primary-container font-headline-md text-headline-md flex items-center justify-center gap-space-sm shadow-md active:scale-95 transition-transform hover:shadow-lg" id="submit-vote-btn" type="button">' +
       ic('send', 'text-[26px]', true) + '<span>Publicar</span></button></div></div>' +
       '<p class="font-body-lg text-body-lg font-bold text-center text-error" id="falta" role="alert"></p>' +
-      '<div class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-md hidden flex items-center justify-center p-gutter" id="vote-modal-success"><div class="w-full max-w-sm rounded-lg bg-surface-container-lowest p-space-lg shadow-xl flex flex-col items-center text-center animate-screen-enter">' +
+      '<div class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-md hidden flex items-center justify-center p-gutter" id="vote-modal-success"><div class="w-full max-w-sm max-h-[88vh] overflow-y-auto rounded-lg bg-surface-container-lowest p-space-lg shadow-xl flex flex-col items-center text-center animate-screen-enter">' +
       '<div class="w-16 h-16 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed mb-space-sm shadow-sm">' + ic('how_to_reg', 'text-[36px]', true) + '</div>' +
       '<h3 class="font-headline-md text-headline-md text-on-surface">¡Publicado!</h3>' +
       '<div class="mt-space-md p-space-sm rounded-DEFAULT bg-surface-container flex items-center justify-between w-full"><span class="font-body-lg text-body-lg text-on-surface">Tu nota</span><span class="font-score-display text-score-display text-primary" id="modal-final-score"></span></div>' +
       '<a class="mt-space-lg w-full h-14 rounded-full bg-secondary text-on-secondary font-body-lg text-body-lg font-bold flex items-center justify-center active:scale-95 transition-all" href="#/local/' + id + '">Ver el sitio</a>' +
-      '<a class="mt-space-sm w-full h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center active:scale-95 transition-all" href="#/explorar">Seguir</a></div></div></div>';
+      '<a class="mt-space-sm w-full h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center active:scale-95 transition-all" href="#/explorar">Seguir</a>' +
+      '<div class="mt-space-lg w-full flex flex-col gap-space-sm">' + tarjetaSaneas('¿Sales a comer y no quieres engordar?', 'Saneas te enseña a hacerlo sin dejar de salir.') + botonAppsGrupo() + '</div></div></div></div>';
 
     function valor(cid) {
       var o = cat !== l.tipo && voto.pc[cat] ? voto.pc[cat][cid] : null;
@@ -840,7 +864,8 @@
       vista.innerHTML = '<div class="px-gutter pt-space-lg pb-8 animate-screen-enter"><div class="rounded-lg bg-surface-container-lowest p-space-lg shadow-xl flex flex-col items-center text-center">' +
         '<div class="w-16 h-16 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed mb-space-sm shadow-sm">' + ic('how_to_reg', 'text-[36px]', true) + '</div>' +
         '<h3 class="font-headline-md text-headline-md text-on-surface">Gracias</h3><p class="font-body-lg text-body-lg text-on-surface mt-1">Lo revisamos y te avisamos por correo.</p>' +
-        '<a class="mt-space-lg w-full h-14 rounded-full bg-secondary text-on-secondary font-body-lg text-body-lg font-bold flex items-center justify-center active:scale-95 transition-all" href="#/explorar">Seguir</a></div></div>';
+        '<a class="mt-space-lg w-full h-14 rounded-full bg-secondary text-on-secondary font-body-lg text-body-lg font-bold flex items-center justify-center active:scale-95 transition-all" href="#/explorar">Seguir</a>' +
+        '<div class="mt-space-sm w-full">' + botonAppsGrupo() + '</div></div></div>';
     };
   };
 
