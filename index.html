@@ -60,7 +60,7 @@
 <header class="cabecera fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-gutter flex items-center justify-between gap-space-sm">
   <div class="flex items-center gap-space-sm min-w-0">
     <a class="flex-shrink-0" href="#/explorar" aria-label="Salimos, volver al inicio"><img alt="" class="h-8 w-8 rounded-DEFAULT object-contain" src="img/icono.svg"></a>
-    <div class="flex flex-col min-w-0"><div class="flex items-center gap-space-xs"><a class="font-label-prominent text-label-prominent text-on-surface flex-shrink-0" href="#/explorar">Salimos</a><button type="button" id="destino" class="flex items-center px-1.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-micro text-label-micro uppercase tracking-wider min-w-0" aria-label="Cambiar de isla o ciudad" aria-haspopup="dialog"><span class="truncate" id="destino-nombre">Gran Canaria</span></button></div><span class="font-label-micro text-label-micro text-on-surface-variant truncate" id="seccion">Explorar</span></div>
+    <div class="flex flex-col min-w-0"><div class="flex items-center gap-space-xs"><a class="font-label-prominent text-label-prominent text-on-surface flex-shrink-0" href="#/explorar">Salimos</a><button type="button" hidden id="destino" class="flex items-center px-1.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-micro text-label-micro uppercase tracking-wider min-w-0" aria-label="Cambiar de isla o ciudad" aria-haspopup="dialog"><span class="truncate" id="destino-nombre">Gran Canaria</span></button></div></div>
   </div>
   <div class="flex items-center gap-space-xs flex-shrink-0">
     <button type="button" class="gs-boton" onclick="GrupoSaneas.abrirMenu()" aria-label="Ver las apps del Grupo Saneas"><span class="gs-b-marca">Grupo <b>Saneas</b> &#9656;</span><span class="gs-b-accion">despliega</span></button>
@@ -72,17 +72,14 @@
 
 <footer class="px-gutter-mobile pb-28 flex flex-col gap-space-md" id="pie">
   <aside class="flex items-center gap-2 p-3 rounded-full bg-on-surface text-surface-container-lowest shadow-lg"><span class="w-2.5 h-2.5 rounded-full bg-tertiary-fixed animate-ping flex-shrink-0 ml-1"></span><span class="font-label-badge text-label-badge">Aquí nadie paga: ni locales, ni marcas, ni anuncios.</span></aside>
-  <p class="font-label-micro text-label-micro text-on-surface-variant uppercase tracking-wider font-bold px-1">El Grupo Saneas</p>
   
   <p class="font-label-prominent text-label-prominent text-center text-secondary"><a href="privacidad.html">Privacidad</a> · <a href="#/como-funciona">Cómo funciona</a></p>
 </footer>
 
-<nav class="pestanas fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-4px_20px_rgba(19,27,46,0.06)]" aria-label="Secciones"><div class="flex justify-around items-center h-16 px-gutter-mobile">
-  <a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="explorar" href="#/explorar"><span class="material-symbols-outlined text-[22px]">explore</span><span class="font-label-badge text-label-badge">Explorar</span></a>
-  <a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="zonas" href="#/zonas"><span class="material-symbols-outlined text-[22px]">map</span><span class="font-label-badge text-label-badge">Zonas</span></a>
-  <a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="votar" href="#/votar"><span class="material-symbols-outlined text-[22px]">rate_review</span><span class="font-label-badge text-label-badge">Votar</span></a>
-  <a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="recomendar" href="#/recomendar"><div class="w-7 h-7 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container"><span class="material-symbols-outlined text-[18px]">add</span></div><span class="font-label-badge text-label-badge">Añadir</span></a>
-  <a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="top" href="#/top"><span class="material-symbols-outlined text-[22px]">leaderboard</span><span class="font-label-badge text-label-badge">Listas</span></a>
+<nav class="pestanas fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-4px_20px_rgba(19,27,46,0.06)]" aria-label="Secciones"><div class="grid grid-cols-3 items-center h-16 px-gutter-mobile">
+  <a class="flex flex-col items-center justify-center gap-0.5 h-14 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="explorar" href="#/explorar"><span class="material-symbols-outlined text-[28px]">explore</span><span class="font-label-prominent text-label-prominent">Salir</span></a>
+  <a class="flex flex-col items-center justify-center gap-0.5 h-14 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="votar" href="#/votar"><span class="material-symbols-outlined text-[28px]">how_to_vote</span><span class="font-label-prominent text-label-prominent">Votar</span></a>
+  <a class="flex flex-col items-center justify-center gap-0.5 h-14 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="recomendar" href="#/recomendar"><div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container"><span class="material-symbols-outlined text-[22px]">add</span></div><span class="font-label-prominent text-label-prominent">Añadir</span></a>
 </div></nav>
 
 <div class="tostada px-4 py-3 rounded-full bg-on-surface text-surface-container-lowest font-label-prominent text-label-prominent shadow-lg" id="tostada" role="status" aria-live="polite"></div>
@@ -109,6 +106,6 @@
 </script>
 <script src="vendor/supabase.js"></script>
 <script src="js/datos.js?v=8"></script>
-<script src="js/app.js?v=30"></script>
+<script src="js/app.js?v=31"></script>
 </body>
 </html>

@@ -39,6 +39,7 @@
     DESTINO = id;
     LOCALES = TODOS.filter(function (l) { return l.destino === id; });
     var b = document.getElementById('destino-nombre'); if (b) b.textContent = id;
+    var d = document.getElementById('destino'); if (d) d.hidden = hay.length < 2;
   }
   async function cargarYo() {
     var s = await sb.auth.getSession();
@@ -122,23 +123,6 @@
   function rotulo(l) { return esc((l.barrio || l.municipio).replace(/ · /g, ' • ')); }
   function seccion(t) { var s = document.getElementById('seccion'); if (s) s.textContent = t; }
 
-  /* Las cuatro píldoras de criterio de las tarjetas, en el orden de colores de Stitch. */
-  var PILDORA = [
-    ['bg-tertiary-fixed/20 text-on-tertiary-fixed', 'text-tertiary'],
-    ['bg-secondary-fixed text-on-secondary-fixed', ''],
-    ['bg-surface-container-high text-on-surface', 'text-primary'],
-    ['bg-surface-container-high text-on-surface', '']
-  ];
-  function pildoras(l, c) {
-    var items = S.criteriosDe(l.tipo, l.tipo2, l.tipo3).filter(function (cr) { return c.crit[cr.id].media != null; })
-      .map(function (cr) { return [cr.icono, cr.nombre + ' ' + n1(c.crit[cr.id].media)]; });
-    if (!items.length) items = (l.etiquetas || []).map(function (e) { return ['check_circle', e]; });
-    return items.slice(0, 4).map(function (it, i) {
-      return '<div class="flex items-center gap-1 px-2 py-1 rounded-DEFAULT ' + PILDORA[i][0] + ' min-w-0">' + ic(it[0], 'text-[14px] ' + PILDORA[i][1]) +
-        '<span class="font-label-badge text-label-badge truncate">' + esc(it[1]) + '</span></div>';
-    }).join('');
-  }
-
   /* El hueco de la foto: hasta que haya fotos propias, el degradado del banner de Stitch con el icono del tipo. */
   /* Mapa pequeño de Gran Canaria con un punto rojo: de un vistazo, si el sitio te pilla lejos. Contorno de Natural Earth (dominio público). */
   function mapaIsla(l, clase) {
@@ -156,56 +140,17 @@
       '<div class="absolute inset-0 flex items-center justify-center">' + ic(tipo(l.tipo).icono, 'text-[88px] text-secondary-fixed/25', true) + '</div>';
   }
 
-  function tarjetaCarrusel(l) {
-    var c = cifras(l, filtro.tipo), puntua = c.nota != null;
-    return '<a href="#/local/' + l.id + '" class="flex-shrink-0 w-[300px] rounded-lg bg-surface-container-lowest shadow-md overflow-hidden flex flex-col transition-transform duration-200 active:scale-[0.99]">' +
-      lienzo(l, 'h-44') +
-      '<div class="absolute bottom-2.5 left-2.5 rounded bg-surface-container-lowest/90 p-1 shadow-md">' + mapaIsla(l, 'block w-12 h-[52px]') + '</div>' +
-      '<div class="absolute bottom-2.5 right-2.5 flex items-center gap-1 px-3 py-1 rounded-full bg-primary-container text-on-primary-container shadow-md">' +
-      (puntua ? '<span class="font-score-display text-score-display leading-none">' + n1(c.nota) + '</span><span class="font-label-micro text-label-micro font-bold opacity-80">/10</span>'
-              : '<span class="font-label-prominent text-label-prominent leading-none py-1">Sin votos</span>') + '</div></div>' +
-      '<div class="p-space-md flex flex-col gap-space-xs">' +
-      '<h4 class="font-headline-md text-headline-md text-on-surface leading-tight">' + esc(l.nombre) + '</h4>' +
-      '<p class="font-body-md text-body-md text-on-surface-variant line-clamp-1">' + rotulo(l) + (l.precio ? ' • ' + euros(l) : '') + '</p></div></a>';
-  }
-
-  /* Fila de ranking: número grande, nombre y nota con estrella. */
-  var COLOR_PUESTO = ['text-primary', 'text-secondary', 'text-on-surface-variant'];
-  function filaRanking(l, i, valor, n, colorNota) {
-    return '<a href="#/local/' + l.id + '" class="flex items-center justify-between min-h-[68px] p-3 rounded-DEFAULT bg-surface-container-low hover:bg-surface-container transition-colors">' +
-      '<div class="flex items-center gap-3 min-w-0"><span class="font-score-display text-score-display ' + (COLOR_PUESTO[i] || 'text-on-surface-variant') + ' flex-shrink-0 w-6 text-center">' + (i + 1) + '</span>' +
-      '<div class="flex flex-col min-w-0 gap-0.5"><span class="font-headline-md text-[21px] leading-[26px] font-bold text-on-surface truncate">' + esc(l.nombre) + '</span>' +
-      '<span class="font-body-md text-body-md text-on-surface-variant truncate">' + rotulo(l) + '</span></div></div>' +
-      '<div class="flex flex-col items-end flex-shrink-0 pl-2"><div class="flex items-center gap-1 ' + (colorNota || 'text-tertiary') + '"><span class="font-headline-md text-headline-md leading-none">' + n1(valor) + '</span>' + ic('star', 'text-[16px]', true) + '</div>' +
-      '<span class="font-label-micro text-label-micro text-on-surface-variant">' + n + (n === 1 ? ' voto' : ' votos') + '</span></div></a>';
-  }
   /* Fila de un sitio que aún no puntúa: el icono de su tipo donde iría el puesto. */
   function filaSitio(l) {
     var c = cifras(l);
     return '<a href="#/local/' + l.id + '" class="flex items-center justify-between min-h-[68px] p-3 rounded-DEFAULT bg-surface-container-low hover:bg-surface-container transition-colors">' +
       '<div class="flex items-center gap-3 min-w-0"><span class="w-11 flex justify-center flex-shrink-0">' + (mapaIsla(l, 'w-11 h-12') || ic(tipo(l.tipo).icono, 'text-[22px] text-secondary')) + '</span>' +
-      '<div class="flex flex-col min-w-0 gap-0.5"><span class="font-headline-md text-[21px] leading-[26px] font-bold text-on-surface truncate">' + esc(l.nombre) + '</span>' +
-      '<span class="font-body-md text-body-md text-on-surface-variant truncate">' + rotulo(l) + '</span></div></div>' +
+      '<div class="flex flex-col min-w-0 gap-0.5"><span class="font-headline-md text-[21px] leading-[26px] font-bold text-on-surface break-words">' + esc(l.nombre) + '</span>' +
+      '<span class="font-body-md text-body-md text-on-surface-variant break-words">' + rotulo(l) + '</span></div></div>' +
       '<span class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-fixed/50 text-on-secondary-fixed font-label-badge text-label-badge flex-shrink-0 ml-2">' +
       (c.votos ? c.votos + (c.votos === 1 ? ' voto' : ' votos') : 'Sin votos') + '</span></a>';
   }
 
-  /* Bloque de ranking de Stitch: círculo con icono, título, «Top 3» y las filas. */
-  var CIRCULO = { tertiary: ['bg-tertiary-fixed text-on-tertiary-fixed', 'bg-tertiary-fixed/30 text-on-tertiary-fixed', 'text-tertiary'],
-                  secondary: ['bg-secondary-fixed text-on-secondary-fixed', 'bg-secondary-fixed/50 text-on-secondary-fixed', 'text-primary'],
-                  neutro: ['bg-surface-container-highest text-on-surface', 'bg-surface-container text-on-surface-variant', 'text-secondary'] };
-  function bloqueRanking(icono, tono, titulo, lista, criterio) {
-    var t = CIRCULO[tono];
-    var filas = lista.slice(0, 3).map(function (l, i) {
-      var c = cifras(l, filtro.tipo), v = criterio ? c.crit[criterio].media : c.nota, n = criterio ? c.crit[criterio].n : c.votos;
-      return filaRanking(l, i, v, n, t[2]);
-    }).join('');
-    if (!filas) return '';
-    return '<div class="flex flex-col rounded-lg bg-surface-container-lowest shadow-md p-space-md gap-space-md">' +
-      '<div class="flex items-center gap-2 min-w-0"><div class="w-11 h-11 rounded-full ' + t[0] + ' flex items-center justify-center flex-shrink-0">' + ic(icono, 'text-[24px]', true) + '</div>' +
-      '<h4 class="font-headline-md text-headline-md text-on-surface">' + titulo + '</h4></div>' +
-      '<div class="flex flex-col gap-space-xs">' + filas + '</div></div>';
-  }
   function cabeceraSeccion(titulo) {
     return '<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface px-1">' + titulo + '</h1>';
   }
@@ -213,27 +158,24 @@
     return '<a class="w-full h-16 rounded-full bg-primary-container text-on-primary-container font-headline-md text-headline-md shadow-md active:scale-95 transition-all flex items-center justify-center gap-2" href="#/recomendar">' +
       ic('add_location_alt', 'text-[28px] animate-bounce') + '<span>Añadir un sitio</span></a>';
   }
-  /* Sin ranking todavía: lo dice en una línea, enseña los sitios que hay y lleva a votar. */
-  function listasVacias(base) {
-    var hay = porVotos(base || []).slice(0, 10);
-    return '<p class="p-space-md rounded-lg bg-surface-container-low font-body-lg text-body-lg text-on-surface">Faltan votos: cada sitio entra con ' + S.MIN_VOTOS_RANKING + '.</p>' +
-      (hay.length ? '<div class="flex flex-col gap-space-xs">' + hay.map(filaSitio).join('') + '</div>' : '') +
-      '<a class="w-full h-16 rounded-full bg-secondary text-on-secondary font-headline-md text-headline-md shadow-md active:scale-95 transition-all flex items-center justify-center gap-2" href="#/votar">' + ic('how_to_vote', 'text-[28px]') + '<span>Votar</span></a>';
-  }
-
   /* ───────── filtros: cuatro botones grandes; cada uno abre sus opciones a la vista ───────── */
   var PRECIOS = [{ id: 1, txt: '€' }, { id: 2, txt: '€€' }, { id: 3, txt: '€€€' }];
   function resumenFiltro(k) {
     if (k === 'tipo') return filtro.tipo ? tipo(filtro.tipo).plural : '';
-    if (k === 'zona') return filtro.zona ? zona(filtro.zona).nombre : '';
+    if (k === 'zona') return filtro.zona === 'cerca' ? 'Cerca de mí' : filtro.zona ? zona(filtro.zona).nombre : '';
+    if (k === 'orden') return filtro.orden ? (CRITERIOS().filter(function (c) { return c.id === filtro.orden; })[0] || {}).nombre : '';
     if (k === 'edad') return filtro.edades.map(function (id) { return S.EDADES.filter(function (e) { return e.id === id; })[0].nombre.replace('De ', ''); }).join(', ');
     return filtro.precio ? '€€€'.slice(0, filtro.precio) : '';
   }
-  var FILTROS = { tipo: ['category', 'Qué'], zona: ['location_on', 'Dónde'], edad: ['group', 'Edad'], precio: ['euro', 'Precio'] };
+  var FILTROS = { tipo: ['category', 'Qué'], zona: ['location_on', 'Dónde'], edad: ['group', 'Edad'], precio: ['euro', 'Precio'], orden: ['sort', 'Ordenar'] };
+  function CRITERIOS() { return S.BASE.concat(S.EXTRAS); }
   function botonesFiltro(claves) {
-    var alguno = claves.some(resumenFiltro);
+    var alguno = claves.some(function (k) { return k !== 'orden' && resumenFiltro(k); });
     return '<section class="grid grid-cols-2 gap-space-xs">' + claves.map(function (k) {
       var v = resumenFiltro(k);
+      /* Ordenar va a lo ancho y siempre dice cómo está ordenada la lista. */
+      if (k === 'orden') return '<button type="button" class="col-span-2 min-h-16 px-4 py-2 rounded-lg shadow-sm active:scale-95 transition-all flex items-center gap-2 text-left bg-secondary text-on-secondary" data-filtro="orden" aria-haspopup="dialog">' +
+        ic('sort', 'text-[26px] flex-shrink-0') + '<span class="font-body-lg text-body-lg font-bold flex-1 min-w-0 break-words">Ordenar: ' + esc(filtro.zona === 'cerca' && POS && !filtro.orden ? 'más cerca' : v ? 'mejor en ' + v.toLowerCase() : 'mejor nota') + '</span>' + ic('expand_more', 'text-[26px] flex-shrink-0') + '</button>';
       return '<button type="button" class="min-h-16 px-3 py-2 rounded-lg shadow-sm active:scale-95 transition-all flex items-center gap-2 text-left ' + (v ? 'bg-secondary text-on-secondary' : 'bg-surface-container-lowest text-on-surface') + '" data-filtro="' + k + '" aria-haspopup="dialog">' +
         ic(FILTROS[k][0], 'text-[26px] flex-shrink-0') + '<span class="font-body-lg text-body-lg font-bold min-w-0 break-words">' + esc(v || FILTROS[k][1]) + '</span></button>';
     }).join('') + (alguno ? '<button type="button" class="col-span-2 h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center gap-2 active:scale-95 transition-all" data-quitar-filtros>' + ic('close', 'text-[24px]') + 'Quitar filtros</button>' : '') + '</section>';
@@ -241,16 +183,17 @@
   function activarFiltros(repinta) {
     vista.querySelectorAll('[data-filtro]').forEach(function (b) { b.onclick = function () { abrirFiltro(b.dataset.filtro, repinta); }; });
     vista.querySelectorAll('[data-quitar-filtros]').forEach(function (b) {
-      b.onclick = function () { filtro.tipo = ''; filtro.zona = ''; filtro.edades = []; filtro.precio = 0; repinta(); };
+      b.onclick = function () { filtro.tipo = ''; filtro.zona = ''; filtro.edades = []; filtro.precio = 0; filtro.orden = ''; repinta(); };
     });
   }
   function abrirFiltro(k, repinta) {
     var varias = k === 'edad';
     var ops = k === 'tipo' ? S.TIPOS.map(function (t) { return { id: t.id, icono: t.icono, txt: t.plural }; })
-      : k === 'zona' ? S.destino(DESTINO).zonas.map(function (z) { return { id: z.id, icono: 'location_on', txt: z.nombre }; })
+      : k === 'zona' ? [{ id: 'cerca', icono: 'near_me', txt: 'Cerca de mí' }].concat(S.destino(DESTINO).zonas.filter(function (z) { return LOCALES.some(function (l) { return l.zona === z.id; }); }).map(function (z) { return { id: z.id, icono: 'location_on', txt: z.nombre }; }))
+      : k === 'orden' ? [{ id: '', icono: 'star', txt: 'Mejor nota' }].concat(CRITERIOS().map(function (c) { return { id: c.id, icono: c.icono, txt: 'Mejor en ' + c.nombre.toLowerCase() }; }))
       : k === 'edad' ? S.EDADES.map(function (e) { return { id: e.id, icono: 'group', txt: e.nombre + ' años' }; })
       : PRECIOS.map(function (o) { return { id: o.id, icono: 'euro', txt: o.txt }; });
-    var marcado = function (id) { return k === 'tipo' ? filtro.tipo === id : k === 'zona' ? filtro.zona === id : k === 'edad' ? filtro.edades.indexOf(id) >= 0 : filtro.precio === id; };
+    var marcado = function (id) { return k === 'tipo' ? filtro.tipo === id : k === 'zona' ? filtro.zona === id : k === 'orden' ? filtro.orden === id : k === 'edad' ? filtro.edades.indexOf(id) >= 0 : filtro.precio === id; };
     var fila = function (o) {
       var on = marcado(o.id);
       return '<button type="button" class="min-h-16 px-4 py-2 rounded-lg flex items-center gap-3 text-left active:scale-95 transition-all ' + (on ? 'bg-secondary text-on-secondary' : 'bg-surface-container-low text-on-surface') + '" data-op="' + o.id + '" aria-pressed="' + on + '">' +
@@ -273,7 +216,8 @@
       var b = e.target.closest('[data-op]'); if (!b) return;
       var id = b.dataset.op;
       if (k === 'tipo') filtro.tipo = filtro.tipo === id ? '' : id;
-      else if (k === 'zona') filtro.zona = filtro.zona === id ? '' : id;
+      else if (k === 'zona') { filtro.zona = filtro.zona === id ? '' : id; if (filtro.zona === 'cerca') { cerrar(); buscarCerca(repinta); return; } }
+      else if (k === 'orden') filtro.orden = id;
       else if (k === 'precio') filtro.precio = filtro.precio === +id ? 0 : +id;
       else { var i = filtro.edades.indexOf(id); if (i >= 0) filtro.edades.splice(i, 1); else filtro.edades.push(id); pinta(); return; }
       cerrar();
@@ -282,17 +226,6 @@
     document.addEventListener('keydown', tecla);
     document.body.appendChild(caja);
   }
-  function ordenarPorNota(lista, criterio) {
-    return lista
-      .map(function (l) { var c = cifras(l, filtro.tipo); return { l: l, v: criterio ? (c.crit[criterio] && c.crit[criterio].media) : c.nota, votos: criterio ? (c.crit[criterio] ? c.crit[criterio].n : 0) : c.votos }; })
-      .filter(function (x) { return x.v != null && x.votos >= S.MIN_VOTOS_RANKING; })
-      .sort(function (a, b) { return b.v - a.v; })
-      .map(function (x) { return x.l; });
-  }
-  function porVotos(lista) {
-    return lista.slice().sort(function (a, b) { return (b.votos - a.votos) || a.nombre.localeCompare(b.nombre, 'es'); });
-  }
-
   /* ───────── pantallas ───────── */
   var P = {};
 
@@ -320,7 +253,7 @@
           '<h3 class="font-label-prominent text-headline-md text-on-surface mt-1">' + p[3] + '</h3></div>';
       }).join('') + '</section>' +
       '<div class="flex flex-col gap-space-sm pt-space-xs sticky bottom-0 bg-gradient-to-t from-surface via-surface to-transparent pb-space-sm">' +
-      '<button type="button" class="w-full h-16 bg-primary-container text-on-primary-container font-headline-md text-headline-md rounded-full flex items-center justify-center gap-space-sm shadow-lg hover:brightness-105 active:scale-95 transition-all" id="empezar">' + ic('how_to_reg', 'text-[28px]', true) + '<span>Entrar en Salimos</span></button>' +
+      '<button type="button" class="w-full h-16 bg-primary-container text-on-primary-container font-headline-md text-headline-md rounded-full flex items-center justify-center gap-space-sm shadow-lg hover:brightness-105 active:scale-95 transition-all" id="empezar">' + ic('explore', 'text-[28px]', true) + '<span>Ver dónde salir</span></button>' +
       '<a class="w-full min-h-12 py-space-sm text-center font-body-lg text-body-lg font-bold text-secondary hover:text-primary transition-colors" href="#/como-funciona">Cómo funciona</a></div></div>';
 
     /* El pilar que queda en el centro de la pantalla se enciende, como en Stitch. */
@@ -334,114 +267,90 @@
     }
     document.getElementById('empezar').onclick = function () {
       var b = this; guardar('visto', 1);
-      b.innerHTML = ic('sync', 'text-[28px] animate-spin') + '<span>Entrando…</span>';
+      b.innerHTML = ic('sync', 'text-[28px] animate-spin') + '<span>Un momento…</span>';
       document.getElementById('manifiesto').classList.add('page-exit');
       setTimeout(function () { location.hash = '#/explorar'; }, 450);
     };
   };
 
-  var filtro = { tipo: '', zona: '', texto: '', edades: [], precio: 0 };
-  var PILL_ON = 'bg-primary-container text-on-primary-container shadow-sm', PILL_OFF = 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest';
-  var CHIP_ON = 'bg-secondary-fixed text-on-secondary-fixed', CHIP_OFF = 'bg-surface-container-lowest text-on-surface';
+  var filtro = { tipo: '', zona: '', texto: '', edades: [], precio: 0, orden: '' };
 
+  /* Salir: todo en una pantalla. Buscador, los filtros y una sola lista con todos los sitios, del mejor al peor. */
   P.explorar = function () {
-    seccion('Explorar');
-    vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter space-y-space-md pb-6 pt-space-md animate-screen-enter">' +
+    seccion('Salir');
+    vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' +
       /* Banner de Stitch */
       '<section class="relative overflow-hidden rounded-lg bg-gradient-to-br from-secondary via-on-secondary-container to-secondary p-space-lg shadow-xl text-on-secondary">' +
       '<div class="absolute -right-8 -top-8 w-44 h-44 rounded-full bg-primary-container/20 blur-2xl pointer-events-none"></div><div class="absolute -left-10 -bottom-10 w-36 h-36 rounded-full bg-tertiary-fixed/15 blur-xl pointer-events-none"></div>' +
       '<h2 class="relative z-10 font-display-hero text-[44px] leading-[50px] font-extrabold tracking-tight text-on-secondary">¿Aquí dónde <span class="text-primary-container">se sale?</span></h2></section>' +
-      /* Buscador (el de la pantalla Mapa de Stitch) */
-      '<label class="flex items-center gap-3 h-16 px-5 rounded-full bg-surface-container-lowest shadow-md">' + ic('search', 'text-[28px] text-secondary') +
-      '<span class="sr-only">Buscar un sitio</span><input type="search" id="busca" class="flex-1 min-w-0 bg-transparent font-body-lg text-body-lg text-on-surface placeholder:text-on-surface-variant focus:outline-none" placeholder="Buscar" value="' + esc(filtro.texto) + '" autocomplete="off"></label>' +
+      buscador('busca', 'Buscar un sitio') +
       (destinosConSitios().length > 1 ? '<button type="button" class="h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center gap-2 w-full" data-destinos>' + ic(S.destino(DESTINO).icono, 'text-[24px]') + esc(DESTINO) + ic('expand_more', 'text-[24px]') + '</button>' : '') +
-      botonesFiltro(['tipo', 'zona', 'edad', 'precio']) +
-      /* Cerca de mí */
-      botonCerca() +
-      /* Carrusel */
-      '<section class="flex flex-col gap-space-xs pt-2"><div class="flex items-center justify-between px-1"><h3 class="font-headline-md text-headline-md text-on-surface tracking-tight">Lo más votado</h3>' +
-      '<span class="font-body-md text-body-md font-bold text-primary" id="cuantos"></span></div>' +
-      '<div class="flex items-stretch gap-space-md overflow-x-auto no-scrollbar -mx-gutter-mobile px-gutter-mobile sm:mx-0 sm:px-0 py-2" id="carrusel"></div></section>' +
-      /* Rankings por criterio */
-      '<section class="flex flex-col gap-space-md pt-2" id="zona-rankings"><div class="flex flex-col gap-space-md" id="rankings"></div>' +
-      '<a class="h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center gap-1" href="#/top">Todas las listas ' + ic('chevron_right', 'text-[26px]') + '</a></section>' +
+      botonesFiltro(['tipo', 'zona', 'edad', 'precio', 'orden']) +
+      '<p class="font-body-lg text-body-lg font-bold text-on-surface-variant px-1" id="cuantos" aria-live="polite"></p>' +
+      '<div class="flex flex-col gap-space-xs" id="lista"></div>' +
       llamadaRecomendar() + '</div>';
-
     vista.querySelectorAll('[data-destinos]').forEach(function (b) { b.onclick = abrirDestinos; });
     activarFiltros(P.explorar);
-    document.getElementById('busca').oninput = function (e) { filtro.texto = e.target.value; pintarResultados(); };
-    pintarResultados();
+    document.getElementById('busca').oninput = function (e) { filtro.texto = e.target.value; pintarLista(); };
+    pintarLista();
     ubicar();
   };
+  function buscador(id, texto) {
+    return '<label class="flex items-center gap-3 h-16 px-5 rounded-full bg-surface-container-lowest shadow-md">' + ic('search', 'text-[28px] text-secondary') +
+      '<span class="sr-only">' + texto + '</span><input type="search" id="' + id + '" class="flex-1 min-w-0 bg-transparent font-body-lg text-body-lg text-on-surface placeholder:text-on-surface-variant focus:outline-none" placeholder="' + texto + '" value="' + esc(filtro.texto) + '" autocomplete="off"></label>';
+  }
 
   function sinTildes(s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
   function filtrados(sinTexto) {
     var q = sinTexto ? '' : sinTildes(filtro.texto.trim());
     return LOCALES.filter(function (l) {
       if (filtro.tipo && l.tipo !== filtro.tipo && l.tipo2 !== filtro.tipo && l.tipo3 !== filtro.tipo) return false;
-      if (filtro.zona && l.zona !== filtro.zona) return false;
+      if (filtro.zona && filtro.zona !== 'cerca' && l.zona !== filtro.zona) return false;
       if (filtro.precio && l.precio !== filtro.precio) return false;
       if (filtro.edades.length && !encajaEdad(mayoria(cifras(l)), filtro.edades)) return false;
       if (q && sinTildes(l.nombre + ' ' + l.municipio + ' ' + (l.barrio || '') + ' ' + tipo(l.tipo).nombre + ' ' + (l.tipo3 ? tipo(l.tipo3).nombre : '') + ' ' + ((zona(l.zona) || {}).nombre || '')).indexOf(q) < 0) return false;
       return true;
     });
   }
-  /* Zonas y Cerca ya ordenan por sitio: aplican todos los filtros menos el de zona. */
-  function sinZona() {
-    var antes = filtro.zona; filtro.zona = '';
-    var base = filtrados(true);
-    filtro.zona = antes;
-    return base;
+  function km(l) { return POS && l.lat != null ? kmEntre(POS.lat, POS.lng, l.lat, l.lng) : null; }
+  /* El orden de la lista: más cerca (si se eligió «Cerca de mí»), la nota general o la de una parte.
+     Primero los que tienen nota, de mayor a menor; detrás los que aún no, por orden alfabético. */
+  function ordenados(base) {
+    var cerca = filtro.zona === 'cerca' && POS && !filtro.orden;
+    return base.filter(function (l) { return !filtro.orden || S.criteriosDe(l.tipo, l.tipo2, l.tipo3).some(function (c) { return c.id === filtro.orden; }); })
+      .map(function (l) {
+        var c = cifras(l, filtro.tipo), d = filtro.orden ? c.crit[filtro.orden] : null;
+        return { l: l, v: filtro.orden ? (d ? d.media : null) : c.nota, n: filtro.orden ? (d ? d.n : 0) : c.votos, km: km(l) };
+      })
+      .sort(function (a, b) {
+        if (cerca) return (a.km == null ? 1e9 : a.km) - (b.km == null ? 1e9 : b.km);
+        if ((a.v == null) !== (b.v == null)) return a.v == null ? 1 : -1;
+        return (b.v || 0) - (a.v || 0) || b.n - a.n || a.l.nombre.localeCompare(b.l.nombre, 'es');
+      });
   }
-  function pintarResultados() {
-    var base = filtrados();
-    /* Lo más votado: como mucho 10 tarjetas en el carrusel. */
-    var top = porVotos(base).slice(0, 10);
-    document.getElementById('cuantos').textContent = base.length > 10 ? 'Top 10' : base.length + (base.length === 1 ? ' sitio' : ' sitios');
-    document.getElementById('carrusel').innerHTML = top.length ? top.map(tarjetaCarrusel).join('')
-      : '<div class="w-full rounded-lg bg-surface-container-lowest shadow-md p-space-lg text-center font-body-lg text-body-lg text-on-surface">No hay ninguno.</div>';
-    var con = function (cid) { return base.filter(function (l) { return S.criteriosDe(l.tipo, l.tipo2, l.tipo3).some(function (c) { return c.id === cid; }); }); };
-    var bloques = bloqueRanking('sanitizer', 'tertiary', 'Más limpios', ordenarPorNota(con('limpieza'), 'limpieza'), 'limpieza') +
-      bloqueRanking('local_bar', 'secondary', 'Mejor comida y bebida', ordenarPorNota(con('consumiciones'), 'consumiciones'), 'consumiciones') +
-      bloqueRanking('local_parking', 'neutro', 'Mejor parking', ordenarPorNota(con('parking'), 'parking'), 'parking');
-    document.getElementById('rankings').innerHTML = bloques;
-    document.getElementById('rankings').classList.toggle('hidden', !bloques);
+  function pintarLista() {
+    var caja = document.getElementById('lista'); if (!caja) return;
+    var lista = ordenados(filtrados());
+    document.getElementById('cuantos').textContent = lista.length + (lista.length === 1 ? ' sitio' : ' sitios');
+    caja.innerHTML = lista.length ? lista.map(function (x) { return filaSalir(x.l, x.v, x.n, x.km); }).join('')
+      : '<p class="p-space-md rounded-lg bg-surface-container-low font-body-lg text-body-lg text-on-surface">No hay ninguno así. Quita algún filtro.</p>';
+  }
+  /* Fila de la lista de Salir: el nombre entero, dónde está, qué es y su nota bien grande. */
+  function filaSalir(l, valor, n, dist) {
+    var lugar = rotulo(l) + ' • ' + nombreTipos(l) + (l.precio ? ' • ' + euros(l) : '');
+    return '<a href="#/local/' + l.id + '" class="flex items-center gap-3 min-h-[76px] p-3 rounded-DEFAULT bg-surface-container-lowest shadow-sm hover:bg-surface-container transition-colors">' +
+      '<span class="w-11 flex justify-center flex-shrink-0">' + (mapaIsla(l, 'w-11 h-12') || ic(tipo(l.tipo).icono, 'text-[22px] text-secondary')) + '</span>' +
+      '<div class="flex flex-col min-w-0 flex-1 gap-0.5"><span class="font-headline-md text-[20px] leading-[25px] font-bold text-on-surface break-words">' + esc(l.nombre) + '</span>' +
+      '<span class="font-body-md text-body-md text-on-surface-variant break-words">' + lugar + '</span>' +
+      (dist != null && filtro.zona === 'cerca' ? '<span class="font-body-md text-body-md font-bold text-secondary flex items-center gap-1">' + ic('near_me', 'text-[16px]') + 'A ' + distancia(dist) + '</span>' : '') + '</div>' +
+      (valor != null ? '<div class="flex flex-col items-center flex-shrink-0 min-w-[56px]"><span class="px-2.5 py-1 rounded-DEFAULT bg-primary-container text-on-primary-container font-score-display text-[24px] leading-none">' + n1(valor) + '</span>' +
+        '<span class="font-label-micro text-label-micro text-on-surface-variant mt-1">' + n + (n === 1 ? ' voto' : ' votos') + '</span></div>'
+        : '<span class="px-2.5 py-1 rounded-full bg-secondary-fixed/50 text-on-secondary-fixed font-label-badge text-label-badge flex-shrink-0">Sin votos</span>') + '</a>';
   }
 
-  /* Top Listas: el mejor en cada cosa, toda la isla. */
-  P.top = function () {
-    seccion('Top Listas');
-    var tonos = ['tertiary', 'secondary', 'neutro'], base = filtrados(true);
-    var bloques = [bloqueRanking('emoji_events', 'secondary', 'Los mejor votados', ordenarPorNota(base), null)]
-      .concat(S.BASE.concat(S.EXTRAS).map(function (c, i) {
-        var aplica = base.filter(function (l) { return S.criteriosDe(l.tipo, l.tipo2, l.tipo3).some(function (x) { return x.id === c.id; }); });
-        return bloqueRanking(c.icono, tonos[i % 3], esc(c.nombre), ordenarPorNota(aplica, c.id), c.id);
-      })).join('');
-    vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' +
-      cabeceraSeccion('Top Listas') + botonesFiltro(['tipo', 'zona', 'edad', 'precio']) +
-      (bloques || listasVacias(base)) + llamadaRecomendar() + '</div>';
-    activarFiltros(P.top);
-  };
-
-  P.zonas = function () {
-    seccion('Zonas');
-    var des = S.destino(DESTINO), base = sinZona();
-    vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' +
-      cabeceraSeccion('Zonas') + botonesFiltro(['tipo', 'edad', 'precio']) +
-      botonCerca() +
-      des.zonas.map(function (z) {
-        var enZona = base.filter(function (l) { return l.zona === z.id; });
-        if (!enZona.length) return '';
-        var top = ordenarPorNota(enZona), resto = porVotos(enZona.filter(function (l) { return top.indexOf(l) < 0; }));
-        var filas = top.map(function (l, i) { var c = cifras(l, filtro.tipo); return filaRanking(l, i, c.nota, c.votos); }).join('') + resto.map(filaSitio).join('');
-        return '<div class="flex flex-col rounded-lg bg-surface-container-lowest shadow-md p-space-md gap-space-md">' +
-          '<div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2 min-w-0"><div class="w-10 h-10 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center flex-shrink-0">' + ic('location_on', 'text-[20px]', true) + '</div>' +
-          '<h4 class="font-headline-md text-headline-md text-on-surface min-w-0">' + esc(z.nombre) + '</h4></div>' +
-          '<span class="font-body-lg text-body-lg font-bold text-secondary flex-shrink-0">' + enZona.length + '</span></div>' +
-          '<div class="flex flex-col gap-space-xs">' + filas + '</div></div>';
-      }).join('') + '</div>';
-    activarFiltros(P.zonas);
-  };
+  /* Las pestañas de antes (Listas y Zonas) ahora son Salir; los enlaces viejos siguen funcionando. */
+  P.top = function () { location.replace('#/explorar'); };
+  P.zonas = function () { location.replace('#/explorar'); };
 
   /* Ficha: «Detalle Local» de Stitch. */
   var CRIT_COLOR = [
@@ -532,6 +441,8 @@
       '<div><div class="flex items-baseline gap-1"><span class="font-display-hero text-display-hero text-on-secondary tracking-tight">' + (c.nota == null ? '–' : n1(c.nota)) + '</span><span class="font-headline-md text-headline-md text-primary-fixed-dim">/ 10</span></div>' +
       '</div></div>' +
       '<p class="font-body-lg text-body-lg font-bold text-on-secondary text-right">' + (c.votos ? c.votos + (c.votos === 1 ? ' voto' : ' votos') : 'Sin votos') + '</p></div></div></div>' +
+      (datos ? '<div class="px-gutter pb-space-md"><div class="bg-surface-container p-space-md rounded-lg"><div class="flex items-center gap-2 mb-2">' + ic('directions', 'text-[22px] text-secondary') +
+        '<h3 class="font-headline-md text-headline-md text-on-surface">Cómo llegar</h3></div><div class="flex flex-col gap-2">' + datos + '</div></div></div>' : '') +
       tarjetaCheckin(l) +
       (l.nota_oscar ? '<div class="px-gutter pb-space-lg"><div class="rounded-lg bg-surface-container-lowest p-space-lg shadow-sm"><div class="flex items-center gap-2 mb-space-xs">' + ic('format_quote', 'text-[24px] text-primary') + '<h3 class="font-headline-md text-headline-md text-on-surface">Lo que dice Óscar</h3></div>' +
         '<p class="font-body-lg text-body-lg text-on-surface">' + esc(l.nota_oscar) + '</p><p class="font-label-prominent text-label-prominent text-on-surface-variant mt-space-sm">Óscar, de Salimos</p></div></div>' : '') +
@@ -551,8 +462,6 @@
             '<div class="flex flex-col min-w-0"><span class="font-label-prominent text-label-prominent text-on-surface">' + esc(n.nombre) + '</span><span class="font-body-sm text-body-sm text-on-surface-variant">' + esc(n.detalle) + '</span></div></div>' +
             '<span class="font-score-display text-score-display text-primary flex-shrink-0">' + n1(n.nota) + '</span></div>';
         }).join('') + '</div></div>' : '') +
-      (datos ? '<div class="px-gutter pb-space-lg"><div class="bg-surface-container p-space-md rounded-lg"><div class="flex items-center gap-2 mb-2">' + ic('storefront', 'text-[18px] text-secondary') +
-        '<h4 class="font-label-prominent text-label-prominent text-on-surface">Cómo encontrarlo</h4></div><div class="flex flex-col gap-2">' + datos + '</div></div></div>' : '') +
       (l.comentarios ? '<div class="px-gutter pb-space-xl" id="comentarios" aria-busy="true"><div class="flex items-center justify-between mb-space-sm"><h3 class="font-headline-md text-headline-md text-on-surface">Comentarios</h3>' +
         '<span class="font-label-badge text-label-badge text-secondary">' + l.comentarios + (l.comentarios === 1 ? ' comentario' : ' comentarios') + '</span></div><div class="flex flex-col gap-space-sm lista"><p class="font-body-sm text-body-sm text-on-surface-variant">Cargando comentarios…</p></div></div>' : '') +
       '<div class="sticky bottom-0 inset-x-0 bg-surface-container-lowest/90 backdrop-blur-xl p-space-md shadow-[0_-8px_24px_rgba(0,0,0,0.06)] z-40"><div class="flex items-center gap-space-sm max-w-lg mx-auto">' +
@@ -628,20 +537,21 @@
   }
 
   /* Votar sin sitio elegido: la lista para escoger. */
+  /* Votar: el mismo buscador y los mismos filtros que Salir, por orden alfabético (o por distancia, con «Cerca de mí»). */
   function elegirParaVotar() {
     seccion('Votar');
     vista.innerHTML = '<div class="px-gutter pt-space-md pb-space-lg flex flex-col gap-space-md animate-screen-enter">' + cabeceraSeccion('¿Dónde has estado?') +
-      '<label class="flex items-center gap-3 h-16 px-5 rounded-full bg-surface-container-lowest shadow-md">' + ic('search', 'text-[28px] text-secondary') +
-      '<span class="sr-only">Buscar un sitio</span><input type="search" id="busca-voto" class="flex-1 min-w-0 bg-transparent font-body-lg text-body-lg text-on-surface placeholder:text-on-surface-variant focus:outline-none" placeholder="Buscar" autocomplete="off"></label>' +
+      buscador('busca-voto', 'Buscar un sitio') + botonesFiltro(['tipo', 'zona', 'edad', 'precio']) +
       '<div class="flex flex-col gap-space-xs" id="para-votar"></div>' + llamadaRecomendar() + '</div>';
-    function pinta(q) {
-      q = sinTildes(q || '');
-      var l = porVotos(LOCALES).filter(function (x) { return !q || sinTildes(x.nombre + ' ' + x.municipio + ' ' + (x.barrio || '')).indexOf(q) >= 0; });
+    activarFiltros(elegirParaVotar);
+    function pinta() {
+      var cerca = filtro.zona === 'cerca' && POS;
+      var l = filtrados().sort(function (a, b) { return cerca ? (km(a) == null ? 1e9 : km(a)) - (km(b) == null ? 1e9 : km(b)) : a.nombre.localeCompare(b.nombre, 'es'); });
       document.getElementById('para-votar').innerHTML = l.map(function (x) { return filaSitio(x).replace('#/local/', '#/votar/'); }).join('') ||
         '<p class="p-space-md rounded-DEFAULT bg-surface-container-low font-body-lg text-body-lg text-on-surface">No está. Añádelo abajo.</p>';
     }
-    document.getElementById('busca-voto').oninput = function (e) { pinta(e.target.value); };
-    pinta('');
+    document.getElementById('busca-voto').oninput = function (e) { filtro.texto = e.target.value; pinta(); };
+    pinta();
   }
   function cabeceraVotar(l) {
     return '<div class="flex items-center justify-between gap-space-sm"><h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface min-w-0">' + esc(l.nombre) + '</h1>' +
@@ -868,7 +778,16 @@
   P.recomendar = function () {
     seccion('Añadir');
     var puede = !!usuario() && YO.perfil;
-    if (!puede) { guardar('vuelta', '#/recomendar'); }
+    if (!puede) {
+      guardar('vuelta', '#/recomendar');
+      vista.innerHTML = '<div class="flex flex-col w-full px-gutter pt-space-md pb-8 gap-space-lg animate-screen-enter">' + cabeceraSeccion('Añadir un sitio') +
+        '<div class="flex flex-col items-center text-center gap-space-md p-space-lg rounded-lg bg-surface-container-lowest shadow-md">' +
+        '<div class="w-20 h-20 rounded-full bg-primary-container/30 text-primary flex items-center justify-center">' + ic('add_location_alt', 'text-[44px]', true) + '</div>' +
+        '<p class="font-headline-md text-headline-md text-on-surface">Para añadir un sitio, entra con tu correo</p>' +
+        '<p class="font-body-lg text-body-lg text-on-surface-variant">Te mandamos un código. Sin contraseña.</p>' +
+        '<a class="w-full ' + BOTON + '" href="#/entrar">' + ic('mail', 'text-[26px]') + 'Entrar con mi correo</a></div></div>';
+      return;
+    }
     vista.innerHTML = '<div class="flex flex-col w-full px-gutter pt-space-md pb-8 gap-space-lg animate-screen-enter">' +
       cabeceraSeccion('Añadir un sitio') +
       (puede ? '' : '<a class="min-h-16 p-space-md rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center gap-3 shadow-sm font-body-lg text-body-lg font-bold" href="#/entrar">' + ic('login', 'text-[26px]') + 'Entrar con tu correo</a>') +
@@ -946,7 +865,7 @@
     /* Lo que dice aquí tiene que ser verdad en sql/01-salimos.sql. */
     var p = [
       ['how_to_reg', 'bg-tertiary-fixed text-on-tertiary-fixed', 'Quién vota', 'Personas con cuenta. Se entra con el correo y un código, sin contraseña. Cada persona tiene un voto por sitio, que puede cambiar cuando quiera.'],
-      ['checklist_rtl', 'bg-primary-fixed text-on-primary-fixed', 'Cómo sale la nota', 'Cada sitio se vota por partes: limpieza, ambiente, servicio, consumiciones, precio, ubicación, parking y guagua, y además lo propio de cada tipo de sitio (la carta, los vinos, la música o las vistas). La nota general es la media de esas partes. Un sitio no entra en los rankings hasta tener ' + S.MIN_VOTOS_RANKING + ' votos.'],
+      ['checklist_rtl', 'bg-primary-fixed text-on-primary-fixed', 'Cómo sale la nota', 'Cada sitio se vota por partes: limpieza, ambiente, servicio, consumiciones, precio, ubicación, parking y guagua, y además lo propio de cada tipo de sitio (la carta, los vinos, la música o las vistas). La nota general es la media de esas partes. La lista de Salir va de la mejor nota a la peor, y también se puede ordenar por cada parte.'],
       ['verified', 'bg-tertiary-container text-on-tertiary-container', 'Voto verificado: «Estuvo allí»', 'Si estás en el local, pulsa «Estoy aquí» en su ficha: comprobamos que estás a menos de 150 m y tu voto sale con el sello «Estuvo allí». Tienes 24 horas para votar, así en una discoteca haces check-in en la puerta y votas al día siguiente. Hasta el 30 de noviembre de 2026 cuentan todos los votos; desde el 1 de diciembre, en la nota y en los rankings solo cuentan los verificados.'],
       ['photo_camera', 'bg-primary-fixed text-on-primary-fixed', 'Fotos', 'Las fotos son de quien ha estado allí (con check-in, hechas con su móvil en el momento) o las cede el propio local. Nunca copiamos fotos de otras webs. Sin personas que se reconozcan: cualquiera puede denunciar una foto y con tres denuncias se retira.'],
       ['money_off', 'bg-error-container text-on-error-container', 'Quién paga', 'Nadie. Ningún local, marca ni anunciante puede pagar por salir, subir o quitar una nota. Salimos es del Grupo Saneas y es gratis.'],
@@ -982,14 +901,13 @@
         return '<button type="button" class="flex items-center justify-between p-3 rounded-DEFAULT text-left transition-colors ' + (on ? 'bg-secondary-fixed text-on-secondary-fixed' : 'bg-surface-container-low hover:bg-surface-container text-on-surface') + '" data-destino="' + esc(id) + '" aria-pressed="' + on + '">' +
           '<span class="flex items-center gap-3">' + ic(d.icono, 'text-[22px]') + '<span class="font-label-prominent text-label-prominent">' + esc(id) + '</span></span>' +
           '<span class="flex items-center gap-1 font-label-badge text-label-badge">' + n + (n === 1 ? ' sitio' : ' sitios') + (on ? ic('check', 'text-[18px]') : '') + '</span></button>';
-      }).join('') + '</div>' + botonCerca() + '</div>';
+      }).join('') + '</div></div>';
     function cerrar() { caja.remove(); document.removeEventListener('keydown', tecla); }
     function tecla(e) { if (e.key === 'Escape') cerrar(); }
     caja.onclick = function (e) {
       if (e.target === caja || e.target.closest('[data-cerrar]')) return cerrar();
       var b = e.target.closest('[data-destino]');
       if (b) { elegirDestino(b.dataset.destino); guardar('destino', DESTINO); cerrar(); ir(); return; }
-      if (e.target.closest('[data-cerca]')) cerrar();
     };
     document.addEventListener('keydown', tecla);
     document.body.appendChild(caja);
@@ -1002,24 +920,23 @@
   /* Ubicación: se pide al abrir la app y cada vez que se vuelve a ella, para enseñar lo que hay cerca.
      Si se negó, se vuelve a preguntar la próxima vez; si el móvil ya no deja preguntar, se explica dónde activarla. */
   var UBIC = { pedida: false, negada: false, intentos: 0 };
-  function botonCerca() { return '<div data-ubic>' + htmlCerca() + '</div>'; }
-  function htmlCerca() {
-    if (UBIC.negada && !POS) {
-      var plat = window.Capacitor && Capacitor.getPlatform ? Capacitor.getPlatform() : 'web';
-      var donde = plat === 'ios' ? 'Ajustes › Salimos › Ubicación › «Mientras se usa la app»'
-        : plat === 'android' ? 'Ajustes › Aplicaciones › Salimos › Permisos › Ubicación'
-        : 'los ajustes del navegador, en el candado junto a la dirección';
-      return '<div class="flex flex-col gap-space-sm p-space-md rounded-lg bg-surface-container-lowest shadow-md">' +
-        '<div class="flex items-center gap-3"><span class="w-11 h-11 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center flex-shrink-0">' + ic('location_off', 'text-[22px]', true) + '</span>' +
-        '<span class="font-body-lg text-body-lg font-bold text-on-surface">Ver lo que tienes cerca</span></div>' +
-        '<button type="button" class="' + BOTON + '" data-reubicar>' + ic('my_location', 'text-[20px]') + ' Activar ubicación</button>' +
-        (UBIC.intentos ? '<p class="font-body-sm text-body-sm text-on-surface">Si no te sale la pregunta, actívala en ' + donde + '.</p>' : '') + '</div>';
-    }
-    return '<a href="#/cerca" data-cerca class="flex items-center gap-3 min-h-16 p-space-sm rounded-lg bg-gradient-to-br from-secondary via-on-secondary-container to-secondary text-on-secondary shadow-md active:scale-[0.98] transition-transform">' +
-      '<span class="w-11 h-11 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center flex-shrink-0">' + ic('near_me', 'text-[22px]', true) + '</span>' +
-      '<span class="font-headline-md text-headline-md flex-1 min-w-0">Cerca de mí</span>' + ic('chevron_right', 'text-[22px] text-secondary-fixed') + '</a>';
+  function dondeActivar() {
+    var plat = window.Capacitor && Capacitor.getPlatform ? Capacitor.getPlatform() : 'web';
+    return plat === 'ios' ? 'Ajustes › Salimos › Ubicación › «Mientras se usa la app»'
+      : plat === 'android' ? 'Ajustes › Aplicaciones › Salimos › Permisos › Ubicación'
+      : 'los ajustes del navegador, en el candado junto a la dirección';
   }
-  function repintarCerca() { document.querySelectorAll('[data-ubic]').forEach(function (d) { d.innerHTML = htmlCerca(); }); }
+  function repintarCerca() { if (document.getElementById('lista')) pintarLista(); }
+  /* «Cerca de mí» en el filtro Dónde: pide la ubicación si aún no la hay y ordena por distancia. */
+  function buscarCerca(repinta) {
+    if (POS) { repinta(); return; }
+    tostada('Buscando dónde estás…');
+    pedirPosicion().then(function (p) { POS = p; UBIC.negada = false; colocarDestino(); repinta(); },
+      function (e) {
+        filtro.zona = ''; UBIC.negada = !!e && e.code === 1; repinta();
+        tostada(e && e.code === 1 ? 'Sin permiso de ubicación. Actívalo en ' + dondeActivar() + '.' : 'No te encontramos. Enciende la ubicación.');
+      });
+  }
   /* Si estás en otro destino con sitios, te lo cambiamos. Devuelve true si ha cambiado. */
   function colocarDestino() {
     var masCerca = TODOS.filter(function (l) { return l.lat != null; }).sort(function (a, b) { return kmEntre(POS.lat, POS.lng, a.lat, a.lng) - kmEntre(POS.lat, POS.lng, b.lat, b.lng); })[0];
@@ -1031,16 +948,12 @@
     UBIC.pedida = true;
     return pedirPosicion().then(function (p) {
       POS = p; UBIC.negada = false;
-      if (colocarDestino() && document.querySelector('[data-ubic]')) ir();
+      if (colocarDestino() && document.getElementById('lista')) ir();
       else repintarCerca();
     }, function (e) { UBIC.negada = !!e && e.code === 1; repintarCerca(); });
   }
-  document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('[data-reubicar]'); if (!b) return;
-    b.disabled = true; UBIC.intentos++; ubicar(true);
-  });
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible' && !POS) { UBIC.pedida = false; if (document.querySelector('[data-ubic]')) ubicar(); }
+    if (document.visibilityState === 'visible' && !POS) { UBIC.pedida = false; if (document.getElementById('lista')) ubicar(); }
   });
   function kmEntre(a, b, c, d) {
     var r = Math.PI / 180, x = Math.sin((c - a) * r / 2), y = Math.sin((d - b) * r / 2);
@@ -1054,40 +967,7 @@
         precisa ? { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 } : { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 });
     });
   }
-  P.cerca = async function () {
-    seccion('Cerca de mí');
-    var cab = cabeceraSeccion('Cerca de ti');
-    if (!POS) {
-      vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' + cab +
-        '<p class="p-space-md rounded-lg bg-surface-container-lowest shadow-md font-body-lg text-body-lg text-on-surface" aria-busy="true">Buscando…</p></div>';
-      try { POS = await pedirPosicion(); }
-      catch (e) {
-        if (location.hash !== '#/cerca') return;
-        var txt = e && e.code === 1 ? 'Sin permiso de ubicación. Actívalo en los ajustes del móvil.' : 'No te encontramos. Enciende la ubicación.';
-        vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' + cab +
-          '<div class="p-space-md rounded-lg bg-surface-container-lowest shadow-md flex flex-col gap-space-sm"><p class="font-body-lg text-body-lg text-on-surface">' + txt + '</p>' +
-          '<div class="flex flex-col gap-space-xs"><button type="button" class="' + BOTON + '" id="otra-vez">' + ic('refresh', 'text-[26px]') + ' Probar otra vez</button>' +
-          '<a class="min-h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center gap-2 px-4 active:scale-95 transition-all" href="#/zonas">Ver zonas</a></div></div></div>';
-        document.getElementById('otra-vez').onclick = P.cerca;
-        return;
-      }
-      if (location.hash !== '#/cerca') return;
-      colocarDestino();
-    }
-    var lista = sinZona().filter(function (l) { return l.lat != null; })
-      .map(function (l) { return { l: l, km: kmEntre(POS.lat, POS.lng, l.lat, l.lng) }; })
-      .sort(function (a, b) { return a.km - b.km; }).slice(0, 25);
-    vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' + cab +
-      botonesFiltro(['tipo', 'edad', 'precio']) +
-      (lista.length && lista[0].km > 60 ? '<p class="p-space-md rounded-lg bg-surface-container-high font-body-lg text-body-lg text-on-surface">No hay nada cerca. Estos son los más próximos.</p>' : '') +
-      '<div class="flex flex-col gap-space-xs">' + (lista.length ? lista.map(function (x) {
-        return filaSitio(x.l).replace(/<span class="flex items-center gap-1 px-2\.5[^]*?<\/span><\/a>$/,
-          '<span class="px-3 py-1.5 rounded-full bg-primary-container text-on-primary-container font-body-md text-body-md font-bold flex-shrink-0 ml-2">' + distancia(x.km) + '</span></a>');
-      }).join('') : '<p class="p-space-md rounded-lg bg-surface-container-low font-body-lg text-body-lg text-on-surface">No hay ninguno.</p>') + '</div>' +
-      '<button type="button" class="min-h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center gap-2 px-4 active:scale-95 transition-all" id="recolocar">' + ic('my_location', 'text-[24px]') + ' Actualizar</button></div>';
-    activarFiltros(P.cerca);
-    document.getElementById('recolocar').onclick = function () { POS = null; P.cerca(); };
-  };
+  P.cerca = function () { filtro.zona = 'cerca'; location.replace('#/explorar'); if (!POS) buscarCerca(function () { if (document.getElementById('lista')) P.explorar(); }); };
 
   /* ───────── check-in: «Estoy aquí» ─────────
      Estando en el local (a 150 m o menos) abre el voto verificado 24 horas. El servidor mide la distancia
@@ -1100,8 +980,8 @@
     var cuerpo = vivo
       ? '<p class="font-body-lg text-body-lg text-on-surface">Check-in hecho. Vota antes de las ' + hora(YO.checkins[l.id]) + ' de mañana.</p>' +
         '<a class="' + BOTON + '" href="#/votar/' + l.id + '">' + ic('how_to_vote', 'text-[24px]') + ' Votar</a>'
-      : '<button type="button" class="' + BOTON + '" id="checkin">' + ic('where_to_vote', 'text-[24px]') + ' Estoy aquí</button>' +
-        '<p class="font-body-md text-body-md text-on-surface-variant text-center">No guardamos tu ubicación.</p>';
+      : '<button type="button" class="min-h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center gap-2 px-4 active:scale-95 transition-all" id="checkin">' + ic('where_to_vote', 'text-[24px] text-secondary') + ' Estoy aquí ahora</button>' +
+        '<p class="font-body-md text-body-md text-on-surface-variant text-center">Si estás en el sitio, tu voto sale como «Estuvo allí». No guardamos tu ubicación.</p>';
     return '<div class="px-gutter pb-space-lg"><div class="flex flex-col gap-space-sm">' + cuerpo + '</div></div>';
   }
   async function hacerCheckin(l, boton) {
@@ -1262,7 +1142,7 @@
     var sinPestanas = nombre === 'local' || nombre === 'bienvenida';
     document.querySelector('.pestanas').style.display = sinPestanas ? 'none' : '';
     document.getElementById('pie').style.display = nombre === 'bienvenida' ? 'none' : '';
-    var tab = { explorar: 'explorar', cerca: 'explorar', local: 'explorar', votar: 'votar', zonas: 'zonas', recomendar: 'recomendar', top: 'top' }[nombre];
+    var tab = { explorar: 'explorar', cerca: 'explorar', local: 'explorar', zonas: 'explorar', top: 'explorar', votar: 'votar', recomendar: 'recomendar' }[nombre];
     document.querySelectorAll('.pestanas a').forEach(function (a) {
       var on = a.dataset.tab === tab;
       a.className = a.className.replace(on ? TAB_OFF : TAB_ON, on ? TAB_ON : TAB_OFF);
