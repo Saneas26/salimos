@@ -731,7 +731,7 @@
       await Promise.all([cargarYo(), cargarLocales()]);
       var vuelta = leer('vuelta', '#/tu'); borrar('vuelta'); tostada('Ya estás dentro.'); location.hash = vuelta;
     }
-    var correo;
+    var correo, quitarAviso = function () {};
     document.getElementById('f1').onsubmit = async function (e) {
       e.preventDefault();
       var err = document.getElementById('err1'), f1 = this, bt = f1.querySelector('button');
@@ -756,12 +756,13 @@
           document.getElementById('cod').value = dm.data.codigo;
           bt.disabled = false; return;
         }
+        quitarAviso = avisoCodigo();
         var r = await sb.auth.signInWithOtp({ email: correo, options: { shouldCreateUser: true, emailRedirectTo: VUELTA } });
         if (r.error) throw r.error;
         f1.hidden = true; document.getElementById('f2').hidden = false;
         document.getElementById('aquien').textContent = 'Enviado a ' + correo;
         document.getElementById('cod').focus();
-      } catch (x) { err.textContent = /rate|seconds/i.test(textoError(x)) ? 'Espera un minuto y pide otro.' : textoError(x); }
+      } catch (x) { quitarAviso(); err.textContent = /rate|seconds/i.test(textoError(x)) ? 'Espera un minuto y pide otro.' : textoError(x); }
       bt.disabled = false;
     };
     document.getElementById('f2').onsubmit = async function (e) {
@@ -774,6 +775,23 @@
       try { await terminar(); } catch (x) { bt.disabled = false; err.textContent = textoError(x); }
     };
   };
+
+  /* El correo con el código tarda 30–40 segundos: lo avisamos 15 segundos en grande para que nadie piense que no funciona. */
+  function avisoCodigo() {
+    var caja = document.createElement('div');
+    caja.className = 'fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-md flex items-center justify-center p-gutter';
+    caja.setAttribute('role', 'alertdialog'); caja.setAttribute('aria-live', 'assertive');
+    caja.innerHTML = '<div class="w-full max-w-sm rounded-lg bg-surface-container-lowest p-space-lg shadow-xl flex flex-col items-center text-center gap-space-md animate-screen-enter">' +
+      '<div class="w-20 h-20 rounded-full bg-primary-container/30 text-primary flex items-center justify-center">' + ic('hourglass_top', 'text-[44px] animate-pulse', true) + '</div>' +
+      '<p class="font-headline-md text-headline-md text-on-surface">El código suele tardar entre 30 y 40 segundos</p>' +
+      '<p class="font-body-lg text-body-lg text-on-surface">Enseguida podrás acceder.</p>' +
+      '<button type="button" class="w-full h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold active:scale-95 transition-all" data-cerrar>Vale</button></div>';
+    var quitar = function () { clearTimeout(t); caja.remove(); };
+    var t = setTimeout(quitar, 15000);
+    caja.onclick = function (e) { if (e.target === caja || e.target.closest('[data-cerrar]')) quitar(); };
+    document.body.appendChild(caja);
+    return quitar;
+  }
 
   P.recomendar = function () {
     seccion('Añadir');
