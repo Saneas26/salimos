@@ -74,7 +74,7 @@
   /* Cifras de un local tal como las da el servidor (el voto propio ya va dentro). */
   function cifras(l, cat) {
     var crit = {}, pc = cat && l.por_categoria ? l.por_categoria[cat] : null;
-    S.criteriosDe(l.tipo, l.tipo2).forEach(function (c) {
+    S.criteriosDe(l.tipo, l.tipo2, l.tipo3).forEach(function (c) {
       var b = (pc && pc[c.id]) || l.crit[c.id] || { suma: 0, n: 0 };
       crit[c.id] = { media: b.n ? b.suma / b.n : null, n: b.n };
     });
@@ -88,10 +88,10 @@
     var pc = l.por_categoria || {};
     var cats = [l.tipo, l.tipo3, l.tipo2].filter(function (t) { return t && (t === l.tipo || pc[t]); });
     if (cats.length < 2) return [];
-    var cambian = S.criteriosDe(l.tipo, l.tipo2).filter(function (cr) { return cats.some(function (t) { var o = pc[t] && pc[t][cr.id]; return o && o.suma / o.n !== c.crit[cr.id].media; }); });
+    var cambian = S.criteriosDe(l.tipo, l.tipo2, l.tipo3).filter(function (cr) { return cats.some(function (t) { var o = pc[t] && pc[t][cr.id]; return o && o.suma / o.n !== c.crit[cr.id].media; }); });
     return cats.map(function (t) {
       var valor = function (cr) { var o = pc[t] && pc[t][cr.id]; return o ? o.suma / o.n : c.crit[cr.id].media; };
-      var medias = S.criteriosDe(l.tipo, l.tipo2).map(valor).filter(function (v) { return v != null; });
+      var medias = S.criteriosDe(l.tipo, l.tipo2, l.tipo3).map(valor).filter(function (v) { return v != null; });
       return { nombre: tipo(t).nombre, icono: tipo(t).icono, nota: medias.reduce(function (a, b) { return a + b; }, 0) / medias.length,
         detalle: cambian.map(function (cr) { return cr.nombre + ' ' + n1(valor(cr)); }).join(' • ') };
     });
@@ -130,7 +130,7 @@
     ['bg-surface-container-high text-on-surface', '']
   ];
   function pildoras(l, c) {
-    var items = S.criteriosDe(l.tipo, l.tipo2).filter(function (cr) { return c.crit[cr.id].media != null; })
+    var items = S.criteriosDe(l.tipo, l.tipo2, l.tipo3).filter(function (cr) { return c.crit[cr.id].media != null; })
       .map(function (cr) { return [cr.icono, cr.nombre + ' ' + n1(c.crit[cr.id].media)]; });
     if (!items.length) items = (l.etiquetas || []).map(function (e) { return ['check_circle', e]; });
     return items.slice(0, 4).map(function (it, i) {
@@ -400,7 +400,7 @@
     document.getElementById('cuantos').textContent = base.length > 10 ? 'Top 10' : base.length + (base.length === 1 ? ' sitio' : ' sitios');
     document.getElementById('carrusel').innerHTML = top.length ? top.map(tarjetaCarrusel).join('')
       : '<div class="w-full rounded-lg bg-surface-container-lowest shadow-md p-space-lg text-center font-body-lg text-body-lg text-on-surface">No hay ninguno.</div>';
-    var con = function (cid) { return base.filter(function (l) { return S.criteriosDe(l.tipo, l.tipo2).some(function (c) { return c.id === cid; }); }); };
+    var con = function (cid) { return base.filter(function (l) { return S.criteriosDe(l.tipo, l.tipo2, l.tipo3).some(function (c) { return c.id === cid; }); }); };
     var bloques = bloqueRanking('sanitizer', 'tertiary', 'Más limpios', ordenarPorNota(con('limpieza'), 'limpieza'), 'limpieza') +
       bloqueRanking('local_bar', 'secondary', 'Mejor comida y bebida', ordenarPorNota(con('consumiciones'), 'consumiciones'), 'consumiciones') +
       bloqueRanking('local_parking', 'neutro', 'Mejor parking', ordenarPorNota(con('parking'), 'parking'), 'parking');
@@ -414,7 +414,7 @@
     var tonos = ['tertiary', 'secondary', 'neutro'], base = filtrados(true);
     var bloques = [bloqueRanking('emoji_events', 'secondary', 'Los mejor votados', ordenarPorNota(base), null)]
       .concat(S.BASE.concat(S.EXTRAS).map(function (c, i) {
-        var aplica = base.filter(function (l) { return S.criteriosDe(l.tipo, l.tipo2).some(function (x) { return x.id === c.id; }); });
+        var aplica = base.filter(function (l) { return S.criteriosDe(l.tipo, l.tipo2, l.tipo3).some(function (x) { return x.id === c.id; }); });
         return bloqueRanking(c.icono, tonos[i % 3], esc(c.nombre), ordenarPorNota(aplica, c.id), c.id);
       })).join('');
     vista.innerHTML = '<div class="flex flex-col w-full px-gutter-mobile sm:px-gutter gap-space-md pb-6 pt-space-md animate-screen-enter">' +
@@ -461,7 +461,7 @@
     var c = cifras(l), m = mayoria(c), notasCat = notasPorCategoria(l, c);
     var mapa = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(l.nombre + ', ' + (l.direccion || l.barrio || '') + ', ' + l.municipio + ', ' + l.destino);
 
-    var criterios = S.criteriosDe(l.tipo, l.tipo2).map(function (cr, i) {
+    var criterios = S.criteriosDe(l.tipo, l.tipo2, l.tipo3).map(function (cr, i) {
       var d = c.crit[cr.id], k = CRIT_COLOR[i % CRIT_COLOR.length];
       return '<div class="bg-surface-container-lowest rounded-lg p-space-md shadow-sm"><div class="flex items-center justify-between mb-1.5"><div class="flex items-center gap-2 min-w-0">' +
         '<div class="w-8 h-8 rounded-full ' + k[0] + ' flex items-center justify-center flex-shrink-0">' + ic(cr.icono, 'text-[18px]') + '</div>' +
@@ -658,7 +658,7 @@
     seccion('Votar');
     var previo = votosDe()[id] || { crit: {}, rapidas: {} };
     var voto = { crit: Object.assign({}, previo.crit), rapidas: Object.assign({}, previo.rapidas), comentario: previo.comentario, pc: JSON.parse(JSON.stringify(previo.por_categoria || {})) };
-    var crits = S.criteriosDe(l.tipo, l.tipo2);
+    var crits = S.criteriosDe(l.tipo, l.tipo2, l.tipo3);
     /* Cada categoría del local se vota aparte. La primera es la nota general; las otras parten de ella y guardan solo lo que cambia. */
     var cats = [l.tipo, l.tipo3, l.tipo2].filter(Boolean), cat = l.tipo;
     var PALABRA = ['Fatal', 'Fatal', 'Muy mal', 'Mal', 'Flojo', 'Regular', 'Aprobado', 'Bien', 'Muy bien', 'Excelente', 'Perfecto'];
