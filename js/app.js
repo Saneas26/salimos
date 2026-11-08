@@ -179,13 +179,14 @@
   /* ───────── filtros: cuatro botones grandes; cada uno abre sus opciones a la vista ───────── */
   var PRECIOS = [{ id: 1, txt: '€' }, { id: 2, txt: '€€' }, { id: 3, txt: '€€€' }];
   function resumenFiltro(k) {
-    if (k === 'tipo') return filtro.tipo ? tipo(filtro.tipo).plural : '';
+    if (k === 'tipo') return filtro.tipo ? momento(filtro.tipo).nombre : '';
     if (k === 'zona') return filtro.zona === 'cerca' ? 'Cerca de mí' : filtro.zona ? zona(filtro.zona).nombre : '';
     if (k === 'orden') return filtro.orden ? (CRITERIOS().filter(function (c) { return c.id === filtro.orden; })[0] || {}).nombre : '';
     if (k === 'edad') return filtro.edades.map(function (id) { return S.EDADES.filter(function (e) { return e.id === id; })[0].nombre.replace('De ', ''); }).join(', ');
     return filtro.precio ? '€€€'.slice(0, filtro.precio) : '';
   }
-  var FILTROS = { tipo: ['category', 'Qué'], zona: ['location_on', 'Dónde'], edad: ['group', 'Edad'], precio: ['euro', 'Precio'], orden: ['sort', 'Ordenar'] };
+  /* «tipo» guarda el momento elegido en «¿Qué te apetece?» (cafe, tapeo, comida…), no el tipo de sitio. */
+  var FILTROS = { tipo: ['restaurant_menu', '¿Qué te apetece?'], zona: ['location_on', 'Dónde'], edad: ['group', 'Edad'], precio: ['euro', 'Precio'], orden: ['sort', 'Ordenar'] };
   function CRITERIOS() { return S.BASE.concat(S.EXTRAS); }
   function botonesFiltro(claves) {
     var alguno = claves.some(function (k) { return k !== 'orden' && resumenFiltro(k); });
@@ -206,7 +207,7 @@
   }
   function abrirFiltro(k, repinta) {
     var varias = k === 'edad';
-    var ops = k === 'tipo' ? S.TIPOS.map(function (t) { return { id: t.id, icono: t.icono, txt: t.plural }; })
+    var ops = k === 'tipo' ? S.MOMENTOS.map(function (m) { return { id: m.id, icono: m.icono, txt: m.nombre }; })
       : k === 'zona' ? [{ id: 'cerca', icono: 'near_me', txt: 'Cerca de mí' }].concat(S.destino(DESTINO).zonas.filter(function (z) { return LOCALES.some(function (l) { return l.zona === z.id; }); }).map(function (z) { return { id: z.id, icono: 'location_on', txt: z.nombre }; }))
       : k === 'orden' ? [{ id: '', icono: 'star', txt: 'Mejor nota' }].concat(CRITERIOS().map(function (c) { return { id: c.id, icono: c.icono, txt: 'Mejor en ' + c.nombre.toLowerCase() }; }))
       : k === 'edad' ? S.EDADES.map(function (e) { return { id: e.id, icono: 'group', txt: e.nombre + ' años' }; })
@@ -322,7 +323,7 @@
   function filtrados(sinTexto) {
     var q = sinTexto ? '' : sinTildes(filtro.texto.trim());
     return LOCALES.filter(function (l) {
-      if (filtro.tipo && l.tipo !== filtro.tipo && l.tipo2 !== filtro.tipo && l.tipo3 !== filtro.tipo) return false;
+      if (filtro.tipo && momentosDe(l).indexOf(filtro.tipo) < 0) return false;
       if (filtro.zona && filtro.zona !== 'cerca' && l.zona !== filtro.zona) return false;
       if (filtro.precio && l.precio !== filtro.precio) return false;
       if (filtro.edades.length && !encajaEdad(mayoria(cifras(l)), filtro.edades)) return false;
@@ -330,6 +331,10 @@
       return true;
     });
   }
+  function momento(id) { return S.MOMENTOS.filter(function (m) { return m.id === id; })[0] || { nombre: id, icono: 'place' }; }
+  function momentosDe(l) { return l.momentos || []; }
+  /* La nota de una categoría (tardeo, copas…) solo cuenta si ese momento es también un tipo del sitio. */
+  function catDe(l) { return [l.tipo, l.tipo2, l.tipo3].indexOf(filtro.tipo) >= 0 ? filtro.tipo : ''; }
   function km(l) { return POS && l.lat != null ? kmEntre(POS.lat, POS.lng, l.lat, l.lng) : null; }
   /* El orden de la lista: más cerca (si se eligió «Cerca de mí»), la nota general o la de una parte.
      Primero los que tienen nota, de mayor a menor; detrás los que aún no, por orden alfabético. */
@@ -337,7 +342,7 @@
     var cerca = filtro.zona === 'cerca' && POS && !filtro.orden;
     return base.filter(function (l) { return !filtro.orden || S.criteriosDe(l.tipo, l.tipo2, l.tipo3).some(function (c) { return c.id === filtro.orden; }); })
       .map(function (l) {
-        var c = cifras(l, filtro.tipo), d = filtro.orden ? c.crit[filtro.orden] : null;
+        var c = cifras(l, catDe(l)), d = filtro.orden ? c.crit[filtro.orden] : null;
         return { l: l, v: filtro.orden ? (d ? d.media : null) : c.nota, n: filtro.orden ? (d ? d.n : 0) : c.votos, km: km(l) };
       })
       .sort(function (a, b) {
@@ -446,13 +451,17 @@
       '<div class="px-gutter pb-space-md"><div class="relative w-full h-56 rounded-lg overflow-hidden shadow-md group" id="cab-foto">' + lienzo(l, 'h-full') + '</div>' +
       '<div class="absolute inset-0 bg-gradient-to-t from-on-background/80 via-on-background/25 to-transparent"></div>' +
       (l.precio ? '<div class="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-secondary text-on-secondary font-label-prominent text-label-prominent flex items-center gap-1">' + euros(l) + '</div>' : '') +
-      '<div class="absolute bottom-3 left-3 right-3 text-surface-container-lowest flex items-end justify-between gap-2"><div class="min-w-0">' +
+      '<div class="absolute bottom-3 left-3 right-3 text-surface-container-lowest flex flex-col items-start gap-1.5"><div class="min-w-0 w-full">' +
       '<span class="font-label-badge text-label-badge uppercase tracking-wider text-primary-fixed-dim">' + rotulo(l) + '</span>' +
       '<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-surface-container-lowest leading-tight">' + esc(l.nombre) + '</h2></div>' +
       (m.length ? '<span class="px-2.5 py-1 rounded-full bg-surface-container-lowest/20 backdrop-blur-md font-label-micro text-label-micro text-surface-container-lowest flex-shrink-0">Gente de ' + m.map(function (x) { return x.nombre.replace('De ', '').toLowerCase(); }).join(', de ').replace(/, de ([^,]*)$/, ' y de $1') + '</span>' : '') +
       '</div></div><p class="hidden pt-1.5 font-label-micro text-label-micro text-on-surface-variant text-right" id="credito-google"></p></div>' +
       '<div class="px-gutter pb-space-md flex items-center gap-space-md">' + mapaIsla(l, 'w-20 h-[88px] flex-shrink-0') + '<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1.5">' + ic('explore', 'text-[18px] text-secondary flex-shrink-0') +
       '<span>' + nombreTipos(l) + ' • ' + esc(l.municipio) + '</span></p></div>' +
+      (momentosDe(l).length ? '<div class="px-gutter pb-space-md flex flex-wrap gap-2" aria-label="Para qué ir">' + momentosDe(l).map(function (id) {
+        var m = momento(id);
+        return '<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-body-md text-body-md font-bold">' + ic(m.icono, 'text-[20px]') + esc(m.nombre) + '</span>';
+      }).join('') + '</div>' : '') +
       /* Tarjeta azul de la nota */
       '<div class="px-gutter pb-space-md"><div class="relative overflow-hidden rounded-lg bg-secondary text-on-secondary p-space-lg shadow-xl">' +
       '<div class="absolute -right-8 -top-8 w-40 h-40 rounded-full bg-secondary-container/20 blur-2xl pointer-events-none"></div>' +

@@ -15,6 +15,18 @@
     { id: 'vinoteca',    nombre: 'Vinoteca',       plural: 'Vinotecas',    icono: 'wine_bar' }
   ];
 
+  // Momentos de salir: lo que busca la gente («me apetece un café», «vamos de tapeo», «a cenar»…). Cada sitio tiene
+  // los suyos (salimos.locales.momentos) y el filtro «¿Qué te apetece?» busca por aquí. El tipo de sitio va aparte.
+  var MOMENTOS = [
+    { id: 'cafe',   nombre: 'Un café', icono: 'local_cafe' },
+    { id: 'tapeo',  nombre: 'Tapeo',   icono: 'tapas' },
+    { id: 'comida', nombre: 'Comida',  icono: 'lunch_dining' },
+    { id: 'cena',   nombre: 'Cena',    icono: 'dinner_dining' },
+    { id: 'tardeo', nombre: 'Tardeo',  icono: 'wb_sunny' },
+    { id: 'copas',  nombre: 'Copas',   icono: 'local_bar' },
+    { id: 'fiesta', nombre: 'Fiesta',  icono: 'nightlife' }
+  ];
+
   // Base común: la votan todos los locales.
   var BASE = [
     { id: 'limpieza',      nombre: 'Limpieza',       icono: 'sanitizer', ayuda: 'Baños, barra, mesas y cocina' },
@@ -90,7 +102,7 @@
   }
 
   window.SALIMOS = {
-    TIPOS: TIPOS, EDADES: EDADES, BASE: BASE, EXTRAS: EXTRAS, RAPIDAS: RAPIDAS, DESTINOS: DESTINOS, MUNICIPIOS: MUNICIPIOS,
+    TIPOS: TIPOS, MOMENTOS: MOMENTOS, EDADES: EDADES, BASE: BASE, EXTRAS: EXTRAS, RAPIDAS: RAPIDAS, DESTINOS: DESTINOS, MUNICIPIOS: MUNICIPIOS,
     destino: destino,
     criteriosDe: criteriosDe, zonaDe: zonaDe,
     MIN_VOTOS_RANKING: 5
