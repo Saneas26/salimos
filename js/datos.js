@@ -4,6 +4,7 @@
    Si se toca un criterio o una respuesta, hay que tocar también sql/01-salimos.sql. */
 (function () {
   var TIPOS = [
+    { id: 'cafe',        nombre: 'Café',           plural: 'Un café',      icono: 'local_cafe' },
     { id: 'restaurante', nombre: 'Restaurante',    plural: 'Comer',        icono: 'restaurant' },
     { id: 'guachinche',  nombre: 'Guachinche',     plural: 'Guachinches',  icono: 'outdoor_grill' },
     { id: 'terraza',     nombre: 'Terraza',        plural: 'Terrazas',     icono: 'deck' },
