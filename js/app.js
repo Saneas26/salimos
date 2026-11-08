@@ -614,9 +614,9 @@
       (cats.length > 1 ? '<button class="boton-off w-full h-16 rounded-full bg-primary-container text-on-primary-container font-headline-md text-headline-md flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform" id="cat-siguiente" type="button"></button>' : '') +
       '<div class="flex flex-col gap-space-md" id="paso-final"><div class="flex flex-col gap-space-sm pt-space-xs">' +
       S.RAPIDAS.map(function (r) {
-        return '<div class="rounded-DEFAULT bg-surface-container-low p-space-md shadow-xs flex flex-col gap-3"><span class="font-body-lg text-body-lg font-bold text-on-surface" id="q-' + r.id + '">' + r.pregunta + '</span>' +
+        return '<div class="rounded-DEFAULT bg-surface-container-low p-space-md shadow-xs flex flex-col gap-3"><span class="font-body-lg text-body-lg font-bold text-on-surface" id="q-' + r.id + '">' + r.pregunta + (r.id === 'edad' ? ' <span class="font-body-md text-body-md font-normal text-on-surface-variant">(puedes marcar varias)</span>' : '') + '</span>' +
           '<div class="flex items-center gap-2 flex-wrap" role="group" aria-labelledby="q-' + r.id + '">' + r.opciones.map(function (o) {
-            var on = voto.rapidas[r.id] === o[0];
+            var on = marcada(r.id, o[0]);
             return '<button type="button" class="' + (on ? TAG_ON : TAG_OFF) + '" data-r="' + r.id + '" data-v="' + o[0] + '" aria-pressed="' + on + '"><span>' + o[1] + '</span></button>';
           }).join('') + '</div></div>';
       }).join('') + '</div>' +
@@ -636,6 +636,7 @@
       '<a class="mt-space-sm w-full h-14 rounded-full bg-surface-container-high text-on-surface font-body-lg text-body-lg font-bold flex items-center justify-center active:scale-95 transition-all" href="#/explorar">Seguir</a>' +
       '<div class="mt-space-lg w-full flex flex-col gap-space-sm">' + tarjetaSaneas('¿Sales a comer y no quieres engordar?', 'Saneas te enseña a hacerlo sin dejar de salir.') + botonAppsGrupo() + '</div></div></div></div>';
 
+    function marcada(k, v) { return k === 'edad' ? (voto.rapidas.edad || '').split(',').indexOf(v) >= 0 : voto.rapidas[k] === v; }
     function valor(cid) {
       var o = cat !== l.tipo && voto.pc[cat] ? voto.pc[cat][cid] : null;
       return o != null ? o : voto.crit[cid];
@@ -689,9 +690,15 @@
     vista.querySelectorAll('.no-se').forEach(function (b) { b.onclick = function () { marcar(b.dataset.c, null); }; });
     vista.querySelectorAll('[data-r]').forEach(function (b) {
       b.onclick = function () {
-        var on = voto.rapidas[b.dataset.r] === b.dataset.v;
-        if (on) delete voto.rapidas[b.dataset.r]; else voto.rapidas[b.dataset.r] = b.dataset.v;
-        vista.querySelectorAll('[data-r="' + b.dataset.r + '"]').forEach(function (o) { var a = !on && o === b; o.className = a ? TAG_ON : TAG_OFF; o.setAttribute('aria-pressed', a); });
+        var k = b.dataset.r, v = b.dataset.v;
+        if (k === 'edad') {
+          /* La edad admite varios tramos a la vez: se guardan juntos, separados por comas, en el orden de la lista. */
+          var lista = (voto.rapidas.edad || '').split(',').filter(Boolean), i = lista.indexOf(v);
+          if (i >= 0) lista.splice(i, 1); else lista.push(v);
+          lista = S.EDADES.map(function (e) { return e.id; }).filter(function (id) { return lista.indexOf(id) >= 0; });
+          if (lista.length) voto.rapidas.edad = lista.join(','); else delete voto.rapidas.edad;
+        } else if (voto.rapidas[k] === v) delete voto.rapidas[k]; else voto.rapidas[k] = v;
+        vista.querySelectorAll('[data-r="' + k + '"]').forEach(function (o) { var a = marcada(k, o.dataset.v); o.className = a ? TAG_ON : TAG_OFF; o.setAttribute('aria-pressed', a); });
       };
     });
     document.getElementById('review-opinion').oninput = function (e) { document.getElementById('char-count').textContent = e.target.value.length + '/300'; };
